@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP KEY 管理平台 — 开始使用</title>
+  <style>
+    :root {
+      --primary: #3370FF;
+      --primary-dark: #245BDB;
+      --primary-light: #EEF3FF;
+      --gray-50: #F7F8FA;
+      --gray-100: #F0F1F5;
+      --gray-200: #E0E2E7;
+      --gray-300: #C9CDD4;
+      --gray-400: #9DA3AE;
+      --gray-500: #6B7280;
+      --gray-600: #4B5563;
+      --gray-700: #374151;
+      --gray-800: #1F2937;
+      --green: #00B42A;
+      --orange: #F59E0B;
+      --red: #F53F3F;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+
+    /* ========== Layout ========== */
+    .app-shell { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 240px; background: #fff; border-right: 1px solid var(--gray-100);
+      padding: 20px 16px; display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .sidebar .logo { font-size: 16px; font-weight: 700; color: var(--gray-800); margin-bottom: 28px; display: flex; align-items: center; gap: 8px; }
+    .sidebar .logo span { font-size: 22px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px;
+      font-size: 14px; cursor: pointer; color: var(--gray-500); transition: all .15s;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--gray-50); color: var(--gray-700); }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+    .nav-item .nav-icon { font-size: 18px; width: 22px; text-align: center; }
+
+    .sidebar-footer {
+      margin-top: auto; padding-top: 16px; border-top: 1px solid var(--gray-100);
+      display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--gray-500);
+    }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 600; }
+
+    .main-content { flex: 1; overflow-y: auto; }
+
+    /* ========== Hero Section ========== */
+    .hero {
+      background: linear-gradient(135deg, #3370FF 0%, #245BDB 50%, #1a3f99 100%);
+      padding: 60px 48px 48px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -40%; right: -10%; width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: -30%; left: 20%; width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,.05) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 680px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.15); backdrop-filter: blur(8px);
+      padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .hero h1 { font-size: 32px; font-weight: 700; line-height: 1.3; margin-bottom: 14px; }
+    .hero p { font-size: 16px; opacity: .85; line-height: 1.7; margin-bottom: 28px; }
+    .hero-actions { display: flex; gap: 12px; }
+    .btn-hero {
+      padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; border: none; transition: all .2s;
+    }
+    .btn-hero-primary {
+      background: #fff; color: var(--primary); box-shadow: var(--shadow-md);
+    }
+    .btn-hero-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+    .btn-hero-secondary {
+      background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3);
+      backdrop-filter: blur(4px);
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,.25); }
+
+    /* ========== Why Section ========== */
+    .section { padding: 40px 48px; }
+    .section-title { font-size: 20px; font-weight: 700; color: var(--gray-800); margin-bottom: 6px; }
+    .section-subtitle { font-size: 14px; color: var(--gray-500); margin-bottom: 28px; }
+
+    .why-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .why-card {
+      background: #fff; border: 1px solid var(--gray-100); border-radius: 12px;
+      padding: 24px; transition: all .2s;
+    }
+    .why-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .why-icon {
+      width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 22px; margin-bottom: 14px;
+    }
+    .why-card h3 { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 8px; }
+    .why-card p { font-size: 13px; color: var(--gray-500); line-height: 1.6; }
+
+    /* ========== Services Section ========== */
+    .services-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+    }
+    .service-card {
+      background: #fff; border: 1px solid var(--gray-100); border-radius: 12px;
+      padding: 20px 24px; display: flex; align-items: flex-start; gap: 16px;
+      transition: all .2s;
+    }
+    .service-card:hover { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(51,112,255,.06); }
+    .service-icon {
+      width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 24px; flex-shrink: 0;
+    }
+    .service-info { flex: 1; }
+    .service-info h4 { font-size: 14px; font-weight: 600; color: var(--gray-800); margin-bottom: 4px; }
+    .service-info p { font-size: 12px; color: var(--gray-500); line-height: 1.5; margin-bottom: 8px; }
+    .service-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tool-tag {
+      font-size: 11px; padding: 3px 8px; background: var(--gray-50); border: 1px solid var(--gray-100);
+      border-radius: 4px; color: var(--gray-600); font-family: 'SF Mono', Monaco, monospace;
+    }
+    .service-type {
+      font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600;
+      display: inline-block; margin-left: 6px; vertical-align: middle;
+    }
+    .type-tat { background: #FFF7E6; color: #D46B08; }
+    .type-uat { background: #E6F7FF; color: #096DD9; }
+    .type-shared { background: #F0FFF0; color: #389E0D; }
+
+    /* ========== Flow Section ========== */
+    .flow-steps {
+      display: flex; gap: 0; align-items: stretch;
+    }
+    .flow-step {
+      flex: 1; background: #fff; border: 1px solid var(--gray-100); border-radius: 12px;
+      padding: 24px; text-align: center; position: relative;
+    }
+    .flow-step:not(:last-child)::after {
+      content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+      font-size: 20px; color: var(--gray-300); z-index: 1;
+    }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light);
+      color: var(--primary); font-weight: 700; font-size: 14px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+    }
+    .flow-step h4 { font-size: 14px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+    .flow-step p { font-size: 12px; color: var(--gray-500); line-height: 1.5; }
+
+    /* ========== Architecture Diagram ========== */
+    .arch-box {
+      background: #fff; border: 1px solid var(--gray-100); border-radius: 12px;
+      padding: 28px; margin-top: 24px;
+    }
+    .arch-row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px; }
+    .arch-node {
+      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      text-align: center; min-width: 140px;
+    }
+    .arch-arrow { color: var(--gray-300); font-size: 18px; }
+    .arch-arrow-down { text-align: center; color: var(--gray-300); font-size: 18px; margin: 8px 0; }
+    .node-dify { background: #E6F7FF; color: #096DD9; border: 1px solid #91D5FF; }
+    .node-key { background: #FFF7E6; color: #D46B08; border: 1px solid #FFD591; }
+    .node-mcp { background: #F0FFF0; color: #389E0D; border: 1px solid #B7EB8F; }
+    .node-feishu { background: #F0F0FF; color: #531DAB; border: 1px solid #D3ADF7; }
+
+    /* ========== CTA Footer ========== */
+    .cta-section {
+      background: #fff; border-top: 1px solid var(--gray-100);
+      padding: 32px 48px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .cta-section h3 { font-size: 18px; font-weight: 600; color: var(--gray-800); }
+    .cta-section p { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
+    .btn-cta {
+      padding: 12px 32px; background: var(--primary); color: #fff; border: none;
+      border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: all .2s; box-shadow: var(--shadow-sm);
+    }
+    .btn-cta:hover { background: var(--primary-dark); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+    /* ========== Animations ========== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in { animation: fadeInUp .5s ease-out both; }
+    .delay-1 { animation-delay: .1s; }
+    .delay-2 { animation-delay: .2s; }
+    .delay-3 { animation-delay: .3s; }
+    .delay-4 { animation-delay: .4s; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo"><span>🔐</span> MCP KEY 管理</div>
+    <div class="nav-item active"><span class="nav-icon">🏠</span> 开始使用</div>
+    <div class="nav-item" style="opacity:.5;cursor:not-allowed"><span class="nav-icon">🔑</span> 我的 KEY <span style="font-size:11px;color:var(--gray-400);margin-left:auto">0</span></div>
+    <div class="sidebar-footer">
+      <div class="avatar">李</div>
+      <div><div style="font-weight:500;color:var(--gray-700)">李靖</div><div style="font-size:11px">AI 平台部</div></div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <!-- Hero -->
+    <div class="hero animate-in">
+      <div class="hero-content">
+        <div class="hero-badge">🚀 MCP 服务已上线 · 6 个服务 · 12+ 工具</div>
+        <h1>在 Dify 中安全调用飞书企业级数据能力</h1>
+        <p>MCP KEY 是访问飞书企业级 MCP 服务的授权凭证。<br>通过申请 KEY，你的 AI 工作流可以安全地查询多维表格、管理日历、检索通讯录等企业数据——同时确保每位用户只能访问自己权限范围内的信息。</p>
+        <div class="hero-actions">
+          <button class="btn-hero btn-hero-primary" onclick="alert('跳转到申请 KEY 页面')">🔑 申请 KEY</button>
+          <button class="btn-hero btn-hero-secondary" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})">了解更多 ↓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Why KEY -->
+    <div class="section animate-in delay-1">
+      <div class="section-title">为什么需要 KEY？</div>
+      <div class="section-subtitle">KEY 解决了 AI 工作流访问企业数据时的三个核心问题</div>
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="why-icon" style="background:#FFF7E6">🔒</div>
+          <h3>企业数据需要受控访问</h3>
+          <p>飞书多维表格、通讯录等包含敏感企业数据。MCP 服务使用「超级应用令牌（TAT）」调用飞书 API，可访问<strong>全量企业数据</strong>。KEY 控制哪些 AI 工作流有权调用这些能力，防止未授权访问。</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon" style="background:#E6F7FF">👤</div>
+          <h3>确保数据只给对的人</h3>
+          <p>即使你的工作流有 KEY 授权，每次调用时系统仍会验证<strong>当前操作用户的飞书身份</strong>，通过前置权限校验和后置数据过滤，确保你只能看到自己有权访问的数据。</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon" style="background:#F0FFF0">📊</div>
+          <h3>审计追溯每一次调用</h3>
+          <p>KEY 作为授权凭证，与审计日志绑定。每一次 MCP 调用都会记录<strong>谁在什么时间用了什么工具</strong>，确保企业数据的使用合规可追溯，出了问题也能精准定位。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Available Services -->
+    <div class="section animate-in delay-2" style="background:#fff">
+      <div class="section-title">可用的 MCP 服务</div>
+      <div class="section-subtitle">申请 KEY 时按需选择以下服务和工具，审批通过后即可在 Dify 工作流中使用</div>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon" style="background:#FFF7E6">📊</div>
+          <div class="service-info">
+            <h4>飞书多维表格 <span class="service-type type-tat">TAT</span></h4>
+            <p>查询、创建、更新多维表格记录，适用于数据看板、自动化报表等场景</p>
+            <div class="service-tools">
+              <span class="tool-tag">query_bitable</span>
+              <span class="tool-tag">create_record</span>
+              <span class="tool-tag">update_record</span>
+              <span class="tool-tag">delete_record</span>
+            </div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background:#E6F7FF">📅</div>
+          <div class="service-info">
+            <h4>飞书日历 <span class="service-type type-uat">UAT</span></h4>
+            <p>查看和管理个人日历事件，创建会议邀请，查询空闲时段</p>
+            <div class="service-tools">
+              <span class="tool-tag">list_events</span>
+              <span class="tool-tag">create_event</span>
+              <span class="tool-tag">get_freebusy</span>
+            </div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background:#F0FFF0">👥</div>
+          <div class="service-info">
+            <h4>飞书通讯录 <span class="service-type type-shared">共享</span></h4>
+            <p>搜索员工信息、查询部门架构，适用于组织分析和人员查询</p>
+            <div class="service-tools">
+              <span class="tool-tag">search_employee</span>
+              <span class="tool-tag">get_user_info</span>
+              <span class="tool-tag">list_department</span>
+            </div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background:#FFF0F0">⏰</div>
+          <div class="service-info">
+            <h4>飞书考勤 <span class="service-type type-tat">TAT</span></h4>
+            <p>查询考勤打卡记录、请假审批状态，适用于 HR 自动化场景</p>
+            <div class="service-tools">
+              <span class="tool-tag">get_attendance</span>
+              <span class="tool-tag">list_leave_records</span>
+            </div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background:#F0F0FF">💬</div>
+          <div class="service-info">
+            <h4>飞书即时消息 <span class="service-type type-tat">TAT</span></h4>
+            <p>查询群消息记录、发送通知消息，适用于消息聚合和自动化通知</p>
+            <div class="service-tools">
+              <span class="tool-tag">list_chat_messages</span>
+              <span class="tool-tag">send_message</span>
+            </div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background:#FFFBE6">📄</div>
+          <div class="service-info">
+            <h4>飞书云文档 <span class="service-type type-uat">UAT</span></h4>
+            <p>读取和搜索飞书文档内容，适用于知识库检索和文档分析</p>
+            <div class="service-tools">
+              <span class="tool-tag">read_document</span>
+              <span class="tool-tag">search_docs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--gray-400);display:flex;gap:16px;align-items:center">
+        <span><span class="service-type type-tat" style="vertical-align:baseline">TAT</span> 需要 KEY 授权 + 用户飞书身份验证</span>
+        <span><span class="service-type type-uat" style="vertical-align:baseline">UAT</span> 以用户身份直接调用，天然隔离</span>
+        <span><span class="service-type type-shared" style="vertical-align:baseline">共享</span> KEY 授权 + 后置数据过滤</span>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="section animate-in delay-3">
+      <div class="section-title">使用流程</div>
+      <div class="section-subtitle">从申请到使用，只需 4 步</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <h4>申请 KEY</h4>
+          <p>填写用途说明，<br>选择需要的 MCP 服务和工具</p>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <h4>等待审批</h4>
+          <p>平台管理员审核申请，<br>通过后自动签发 KEY</p>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <h4>部署到 Dify</h4>
+          <p>使用 MCP 配置插件，<br>粘贴 KEY 一键安装服务</p>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <h4>开始使用</h4>
+          <p>在 Dify 工作流中选择<br>MCP 工具，即刻调用</p>
+        </div>
+      </div>
+
+      <!-- Architecture -->
+      <div class="arch-box">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:16px;text-align:center">调用链路</div>
+        <div class="arch-row">
+          <div class="arch-node node-dify">Dify 工作流<br><span style="font-size:11px;opacity:.75">Agent / MCP 节点</span></div>
+          <div class="arch-arrow">→ KEY + 用户身份 →</div>
+          <div class="arch-node node-key">MCP 中台<br><span style="font-size:11px;opacity:.75">KEY 校验 · 权限过滤</span></div>
+          <div class="arch-arrow">→ TAT / UAT →</div>
+          <div class="arch-node node-feishu">飞书 OpenAPI<br><span style="font-size:11px;opacity:.75">企业数据</span></div>
+        </div>
+        <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:8px">
+          KEY 控制「哪些工具可以被调用」· 飞书身份控制「返回的数据只属于你」
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section animate-in delay-4">
+      <div>
+        <h3>准备好了吗？</h3>
+        <p>申请你的第一个 KEY，让 AI 工作流接入飞书企业级数据能力。</p>
+      </div>
+      <button class="btn-cta" onclick="alert('跳转到申请 KEY 页面')">🔑 立即申请 KEY</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
