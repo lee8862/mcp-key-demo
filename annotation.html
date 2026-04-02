@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP KEY v2.0 — 前端需求标注文档</title>
+<style>
+:root{--c-primary:#3370ff;--c-primary-light:#e8efff;--c-success:#34c759;--c-warning:#ff9500;--c-danger:#ff3b30;--c-bg:#f0f1f5;--c-card:#fff;--c-border:#d9dbe3;--c-text:#1d2129;--c-text2:#4e5260;--c-text3:#86909c;--c-anno-bg:#fffbe6;--c-anno-border:#d4a017;--c-anno-title:#874d00;--c-line:#2e5bdb;--radius:6px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","Helvetica Neue","PingFang SC",sans-serif;background:var(--c-bg);color:var(--c-text);font-size:13px;overflow:hidden;height:100vh}
+.top-bar{height:48px;background:#1d2129;color:#fff;display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;z-index:500;position:relative}
+.top-bar .logo{font-size:15px;font-weight:700;letter-spacing:.5px}
+.top-bar .sep{width:1px;height:20px;background:rgba(255,255,255,.2)}
+.top-bar .doc-title{font-size:13px;color:rgba(255,255,255,.7)}
+.tab-bar{height:40px;background:#fff;border-bottom:1px solid var(--c-border);display:flex;align-items:stretch;padding:0 16px;flex-shrink:0;overflow-x:auto;gap:0}
+.tab-btn{padding:0 16px;font-size:12px;color:var(--c-text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500;transition:all .15s}
+.tab-btn:hover{color:var(--c-text2)}
+.tab-btn.active{color:var(--c-primary);border-bottom-color:var(--c-primary)}
+.canvas-wrap{flex:1;position:relative;overflow:hidden}
+.canvas{position:absolute;inset:0;overflow:auto}
+.canvas-inner{position:relative;width:3200px;height:2200px;background:var(--c-bg);background-image:radial-gradient(circle,#d9dbe3 1px,transparent 1px);background-size:20px 20px}
+
+/* Shared iframe - fixed position in canvas */
+.ui-frame-wrap{position:absolute;border:2px solid var(--c-border);border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.1);z-index:1}
+.ui-frame-wrap iframe{border:none;display:block}
+.iframe-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);color:#fff;font-size:11px;padding:6px 12px;text-align:center;z-index:2;transition:opacity .3s}
+
+.anno-box{position:absolute;width:280px;background:var(--c-anno-bg);border:1.5px solid var(--c-anno-border);border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:10;user-select:none;cursor:default}
+.anno-box.selected{border-color:var(--c-primary);box-shadow:0 0 0 2px rgba(51,112,255,.25)}
+.anno-drag{height:26px;background:linear-gradient(180deg,rgba(135,77,0,.08),transparent);cursor:grab;display:flex;align-items:center;padding:0 8px;border-radius:var(--radius) var(--radius) 0 0}
+.anno-drag:active{cursor:grabbing}
+.anno-drag .drag-dots{color:var(--c-text3);font-size:10px;letter-spacing:2px}
+.anno-drag .anno-id{margin-left:auto;font-size:10px;color:var(--c-text3);font-weight:600}
+.anno-title{padding:4px 10px 2px;font-size:12px;font-weight:700;color:var(--c-anno-title);outline:none;min-height:18px;cursor:text}
+.anno-desc{padding:2px 10px 8px;font-size:11px;color:var(--c-text2);line-height:1.6;outline:none;min-height:20px;cursor:text}
+.anno-desc .tag{display:inline;font-weight:600;font-size:10px;padding:1px 4px;border-radius:3px;margin-right:2px}
+.tag-normal{background:#e8efff;color:#3370ff}
+.tag-interact{background:#e8f8ee;color:#16a34a}
+.tag-validate{background:#fff0f0;color:#ff3b30}
+.tag-link{background:#f0e6ff;color:#722ed1}
+.tag-default{background:#f0f1f5;color:#6b6f7a}
+.tag-extreme{background:#fff7e6;color:#d97706}
+.tag-error{background:#fff0f0;color:#cf1322}
+.tag-biz{background:#e6fffb;color:#0d9488}
+.tag-diff{background:#ff3b30;color:#fff}
+.tag-extra{background:#ff9500;color:#fff}
+.svg-layer{position:absolute;inset:0;pointer-events:none;z-index:5}
+.svg-layer line{stroke:var(--c-line);stroke-width:1.8;stroke-dasharray:6,4}
+.dot-handle{width:10px;height:10px;background:var(--c-line);border:2px solid #fff;border-radius:50%;position:absolute;z-index:15;cursor:crosshair;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.nudge-bar{display:none;position:absolute;top:-32px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--c-border);border-radius:4px;padding:2px;gap:2px;z-index:20;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.anno-box.selected .nudge-bar{display:flex}
+.nudge-btn{width:24px;height:24px;border:none;background:none;cursor:pointer;font-size:12px;border-radius:3px;display:flex;align-items:center;justify-content:center;color:var(--c-text2)}
+.nudge-btn:hover{background:var(--c-primary-light);color:var(--c-primary)}
+.app-layout{display:flex;flex-direction:column;height:100vh}
+.legend{position:fixed;bottom:12px;right:12px;background:#fff;border:1px solid var(--c-border);border-radius:6px;padding:10px 14px;font-size:11px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.08);max-width:420px}
+.legend-title{font-weight:700;margin-bottom:6px;color:var(--c-text)}
+.legend-row{display:flex;flex-wrap:wrap;gap:6px}
+.legend-row .tag{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600}
+
+/* Annotation group: each view's annotations are toggled via .anno-group */
+.anno-group{display:none}
+.anno-group.active{display:block}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <div class="top-bar">
+    <span class="logo">MCP KEY v2.0</span>
+    <span class="sep"></span>
+    <span class="doc-title">前端需求标注文档 — 基于 PRD + 前端交互设计</span>
+  </div>
+  <div class="tab-bar" id="tabBar"></div>
+  <div class="canvas-wrap">
+    <div class="canvas" id="canvas">
+      <div class="canvas-inner" id="canvasInner">
+        <!-- Shared iframe -->
+        <div class="ui-frame-wrap" id="frameWrap" style="left:420px;top:60px;width:1280px;height:970px">
+          <iframe id="sharedIframe" src="mcp-key-demo.html" width="1274" height="936"></iframe>
+          <div class="iframe-hint" id="iframeHint"></div>
+        </div>
+        <!-- SVG layer for lines -->
+        <svg class="svg-layer" id="svgLayer" width="3200" height="2200"></svg>
+        <!-- Anno groups will be appended here -->
+      </div>
+    </div>
+  </div>
+</div>
+<div class="legend">
+  <div class="legend-title">标签说明</div>
+  <div class="legend-row">
+    <span class="tag tag-normal">[正常]</span>
+    <span class="tag tag-interact">[交互]</span>
+    <span class="tag tag-validate">[校验]</span>
+    <span class="tag tag-link">[联动]</span>
+    <span class="tag tag-default">[缺省]</span>
+    <span class="tag tag-extreme">[极限]</span>
+    <span class="tag tag-error">[异常]</span>
+    <span class="tag tag-biz">[业务]</span>
+    <span class="tag tag-extra">[补充]</span>
+  </div>
+</div>
+
+<script>
+// ============ VIEW DEFINITIONS ============
+const VIEWS = [
+  {
+    id:'my-keys', label:'我的 KEY',
+    hint:'申请人首页，展示个人所有 KEY 概览。',
+    iframeAction: {nav:'my-keys'},
+    items:[
+      {id:'MK-01',title:'侧边栏导航',x:30,y:80,dotX:410,dotY:300,
+       desc:'<span class="tag tag-normal">[正常]</span> 左侧固定 240px 深色侧边栏。分两组：「用户」区（我的 KEY、申请新 KEY）和「平台管理」区（待审批、全部 KEY 台账、全局审计日志）。当前选中菜单高亮，左侧蓝色边框 + 半透明蓝底。<span class="tag tag-interact">[交互]</span> 点击任一菜单项切换到对应页面，顶栏标题随之变化。<span class="tag tag-biz">[业务]</span> 用户区面向申请人，平台管理区面向审批人。V1 不做角色权限隔离，两组菜单同时可见。'},
+      {id:'MK-02',title:'待审批角标',x:30,y:280,dotX:410,dotY:380,
+       desc:'<span class="tag tag-normal">[正常]</span> 「待审批」菜单项右侧红色圆形数字角标，显示当前待审批申请数量。<span class="tag tag-link">[联动]</span> 每次有新申请提交、审批通过或审批拒绝后，角标数字实时更新。<span class="tag tag-default">[缺省]</span> 数量为 0 时角标隐藏。'},
+      {id:'MK-03',title:'权限全景卡片',x:30,y:440,dotX:410,dotY:140,
+       desc:'<span class="tag tag-normal">[正常]</span> 蓝色底色可折叠面板，标题「权限全景 — 我的所有 KEY 覆盖的工具」。内容区以标签阵列展示当前用户所有生效中 KEY 的 scope 合并去重结果，每个标签格式：「工具名 ← KEY名1, KEY名2」。<span class="tag tag-interact">[交互]</span> 点击标题栏折叠/展开，箭头在 ▼ / ▶ 间切换。<span class="tag tag-default">[缺省]</span> 用户无生效 KEY 时，全景区无内容标签。<span class="tag tag-biz">[业务]</span> 仅统计 status=active 的 KEY，已撤销、审批中的不纳入（与 PRD 3.2 免审判定规则一致）。'},
+      {id:'MK-04',title:'统计卡片',x:30,y:680,dotX:410,dotY:220,
+       desc:'<span class="tag tag-normal">[正常]</span> 三列等宽统计卡片，大号数字 + 文字标签。展示当前用户的：生效中 / 审批中 / 已撤销 KEY 数量。<span class="tag tag-default">[缺省]</span> 无数据时显示 0。'},
+      {id:'MK-05',title:'KEY 列表表格',x:1740,y:80,dotX:1710,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 8 列表格：名称（加粗）、KEY ID（等宽灰色）、状态（Badge：绿色"生效中"/橙色"审批中"/灰色"已撤销"）、Scope 摘要（如「3个 MCP Server · 6个工具」）、最后调用时间、近 7 天调用量（加粗）、创建时间、操作。<span class="tag tag-interact">[交互]</span> 点击「详情」进入 KEY 详情页。右上角「申请新 KEY」按钮跳转到申请页。<span class="tag tag-default">[缺省]</span> 最后调用为空时显示"-"。<span class="tag tag-extreme">[极限]</span> KEY 名称过长建议 ellipsis 截断，hover 展示完整名称。'},
+      {id:'MK-06',title:'顶栏',x:1740,y:380,dotX:1710,dotY:90,
+       desc:'<span class="tag tag-normal">[正常]</span> 白色置顶栏，左侧为当前页面标题（随导航动态切换），右侧为当前用户姓名 + 圆形头像（取姓氏首字，蓝底白字）。<span class="tag tag-extra">[补充]</span> 建议增加用户下拉菜单（登出 / 个人设置），当前原型未实现，需产品确认。'},
+    ]
+  },
+  {
+    id:'new-key-1', label:'申请 KEY·Step1',
+    hint:'三步向导 Step1：填写基本信息。',
+    iframeAction: {nav:'new-key', wizardStep:1},
+    items:[
+      {id:'NK1-01',title:'步骤条导航',x:30,y:80,dotX:410,dotY:110,
+       desc:'<span class="tag tag-normal">[正常]</span> 三步横向步骤条：① 基本信息 → ② 选择权限 → ③ 确认提交。当前步骤蓝色圆圈，已完成步骤绿色圆圈 + 绿色连接线，未到达步骤灰色。<span class="tag tag-interact">[交互]</span> 步骤条不可点击跳转，只能通过底部「上一步 / 下一步」按钮前进后退。'},
+      {id:'NK1-02',title:'KEY 名称输入框',x:30,y:250,dotX:410,dotY:210,
+       desc:'<span class="tag tag-normal">[正常]</span> 必填文本输入框，标签带红色 * 号。placeholder：「如：HR 考勤项目、IT 运维空间」。<span class="tag tag-validate">[校验]</span> 为空点击下一步 → Toast 提示「请填写 KEY 名称」，阻止前进。<span class="tag tag-extreme">[极限]</span> 无最大长度限制。<span class="tag tag-extra">[补充]</span> 建议限制 50 字符，需产品确认。'},
+      {id:'NK1-03',title:'用途描述文本框',x:30,y:450,dotX:410,dotY:340,
+       desc:'<span class="tag tag-normal">[正常]</span> 非必填多行文本框。placeholder：「简要描述此 KEY 的用途场景」。支持垂直拉伸。<span class="tag tag-default">[缺省]</span> 未填写时，确认页该字段显示「（无）」。'},
+      {id:'NK1-04',title:'申请理由文本框',x:30,y:600,dotX:410,dotY:460,
+       desc:'<span class="tag tag-normal">[正常]</span> 必填多行文本框。placeholder：「说明申请此 KEY 的业务需求」。<span class="tag tag-validate">[校验]</span> 为空点击下一步 → Toast 提示「请填写申请理由」。<span class="tag tag-biz">[业务]</span> 申请理由将展示在审批人的待审批列表中，帮助审批人判断是否通过。'},
+      {id:'NK1-05',title:'底部操作按钮',x:1740,y:400,dotX:1710,dotY:560,
+       desc:'<span class="tag tag-normal">[正常]</span> 右对齐两个按钮：[取消]（灰色）+ [下一步]（蓝色主按钮）。<span class="tag tag-interact">[交互]</span> 取消 → 返回「我的 KEY」列表页。下一步 → 校验通过后进入 Step2 选择权限。'},
+    ]
+  },
+  {
+    id:'new-key-2', label:'申请 KEY·Step2',
+    hint:'三步向导 Step2：选择工具权限 scope。',
+    iframeAction: {nav:'new-key', wizardStep:2},
+    items:[
+      {id:'NK2-01',title:'Scope 工具树（左侧 2/3）',x:30,y:80,dotX:410,dotY:200,
+       desc:'<span class="tag tag-normal">[正常]</span> 按 MCP Server 分组展示所有可选工具。每个 Server 可折叠/展开，标题栏显示名称和工具总数（如「飞书多维表格（TAT）4个工具」）。每个工具一行：checkbox + 工具名 + 工具描述。<span class="tag tag-interact">[交互]</span> 勾选/取消勾选工具时，右侧已选摘要面板实时同步更新。<span class="tag tag-biz">[业务]</span> PRD 3.4：scope 按「mcp_id + tools」结构组织，一个 KEY 可选多个 Server 下的多个工具。'},
+      {id:'NK2-02',title:'免审标识',x:30,y:370,dotX:410,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 如果某个工具已被当前用户名下任一「生效中」的 KEY 覆盖过，该工具名右侧显示绿色「免审」标签。<span class="tag tag-biz">[业务]</span> PRD 3.2 核心规则：免审判定仅基于申请人名下 status=active 的 KEY，已撤销或过期的 KEY 不纳入免审范围。举例：用户已有 KEY-A 覆盖了工具1，那新申请 KEY-B 再选工具1时，工具1显示「免审」。'},
+      {id:'NK2-03',title:'已选权限摘要面板（右侧 1/3）',x:1740,y:80,dotX:1710,dotY:200,
+       desc:'<span class="tag tag-normal">[正常]</span> 灰底 sticky 面板，跟随页面滚动固定在右侧。按 MCP Server 分组展示已勾选的工具标签，免审工具标签后附绿色「免审」文字。<span class="tag tag-default">[缺省]</span> 未选择任何工具时，显示灰色文字「尚未选择任何工具」。<span class="tag tag-link">[联动]</span> 每次 checkbox 状态变化后实时刷新。'},
+      {id:'NK2-04',title:'底部操作按钮',x:1740,y:340,dotX:1710,dotY:580,
+       desc:'<span class="tag tag-normal">[正常]</span> [上一步] + [下一步]。<span class="tag tag-validate">[校验]</span> 未勾选任何工具点击下一步 → Toast 提示「请至少选择一个工具」，阻止前进。<span class="tag tag-interact">[交互]</span> 上一步 → 回到 Step1（表单数据保留）。下一步 → 填充确认页数据，计算免审统计后进入 Step3。'},
+    ]
+  },
+  {
+    id:'new-key-3', label:'申请 KEY·Step3',
+    hint:'三步向导 Step3：确认信息并提交。',
+    iframeAction: {nav:'new-key', wizardStep:3},
+    items:[
+      {id:'NK3-01',title:'申请确认面板',x:30,y:80,dotX:410,dotY:180,
+       desc:'<span class="tag tag-normal">[正常]</span> 灰底圆角面板，网格布局展示：KEY 名称（加粗）、用途描述、申请理由、权限范围摘要（如「3个 MCP Server · 6个工具」）。<span class="tag tag-biz">[业务]</span> 权限范围摘要后追加免审统计提示：全部免审 → 绿色文字「全部免审，无需审核直接创建」；部分免审 → 「(N个免审)」；全新无免审 → 无额外提示。'},
+      {id:'NK3-02',title:'确认 Scope 树（只读）',x:30,y:360,dotX:410,dotY:400,
+       desc:'<span class="tag tag-normal">[正常]</span> 只读模式 Scope 工具树，已选工具前显示绿色 ✓，免审工具旁显示绿色「免审」标签。不可勾选/取消。'},
+      {id:'NK3-03',title:'提交申请按钮',x:1740,y:80,dotX:1710,dotY:560,
+       desc:'<span class="tag tag-normal">[正常]</span> 蓝色大按钮「提交申请」。<span class="tag tag-interact">[交互]</span> 点击后根据免审判定分两种结果弹窗。<span class="tag tag-biz">[业务]</span> PRD 3.2 免审三场景：① 全部工具被生效 KEY 覆盖 → 免审直签，KEY 立即生效(active)；② 部分覆盖 → 仅新增工具部分需审批，已覆盖部分免审；③ 完全未覆盖 → 全量审批。<span class="tag tag-link">[联动]</span> 提交后侧边栏「待审批」角标数字更新。'},
+      {id:'NK3-04',title:'申请成功弹窗',x:1740,y:340,dotX:1710,dotY:400,
+       desc:'<span class="tag tag-normal">[正常]</span> 居中 Modal 弹窗，两种内容：<br>A) 免审直签：标题「✅ 无需审核，创建成功」，提示「所有选择的工具权限已被您的生效 KEY 覆盖，已直接创建」，引导前往详情页复制 KEY Value。<br>B) 需审批：标题「✅ 申请已提交」，提示「等待管理员审批」，部分免审时额外列出免审的工具名。底部提示「审批通过后将通过飞书消息通知您」。<span class="tag tag-interact">[交互]</span> 点击「知道了」→ 关闭弹窗，自动跳转回「我的 KEY」列表页。'},
+    ]
+  },
+  {
+    id:'key-detail', label:'KEY 详情页',
+    hint:'请在「我的 KEY」列表中点击某行的「详情」按钮进入此页。',
+    iframeAction: {nav:'my-keys', then:'openDetail'},
+    items:[
+      {id:'KD-01',title:'越权告警横幅',x:30,y:60,dotX:410,dotY:110,
+       desc:'<span class="tag tag-normal">[正常]</span> 橙色告警横幅，文案：「⚠️ 近期有前置拦截记录，可能存在越权调用尝试」。仅当该 KEY 的审计日志中存在「前置拦截」结果的记录时显示。<span class="tag tag-default">[缺省]</span> 无拦截记录时隐藏。<span class="tag tag-biz">[业务]</span> 对应 PRD 6.2 鉴权链路中 tool_acl deny 或前置权限验证失败的场景，提醒申请人关注安全风险。'},
+      {id:'KD-02',title:'凭证信息卡片',x:30,y:260,dotX:410,dotY:230,
+       desc:'<span class="tag tag-normal">[正常]</span> 展示 KEY 名称（大号加粗）、KEY ID（等宽灰色）、状态 Badge（右上角）、KEY Value 密文框、用途描述、最后活跃时间。<br>KEY Value 默认显示圆点密文「••••••••••••••••」。<span class="tag tag-interact">[交互]</span> 点击 [查看] → 切换为明文，按钮变为 [隐藏]；点击 [复制] → 复制到剪贴板 → Toast 提示「KEY Value 已复制，可粘贴到 Dify MCP Server 配置」。<span class="tag tag-default">[缺省]</span> 审批中的 KEY 显示「（审批通过后生成）」；最后活跃为空显示「暂无调用记录」。<span class="tag tag-biz">[业务]</span> PRD 3.3：KEY 明文仅签发时展示一次。生产环境数据库只存 sha256 hash。'},
+      {id:'KD-03',title:'使用人统计卡片',x:30,y:530,dotX:410,dotY:480,
+       desc:'<span class="tag tag-normal">[正常]</span> 表格三列：用户名（加粗）/ 最后调用时间 / 累计调用次数。展示所有通过该 KEY 进行过 API 调用的用户。<span class="tag tag-default">[缺省]</span> 无使用记录时整个卡片隐藏。<span class="tag tag-biz">[业务]</span> PRD 5.2：KEY 允许分发给多人使用，担责在申请人。此卡片帮助申请人掌握分发后的实际使用情况。'},
+      {id:'KD-04',title:'权限范围卡片',x:1740,y:60,dotX:1710,dotY:150,
+       desc:'<span class="tag tag-normal">[正常]</span> 以 MCP Server 分组的只读工具树，已授权工具前显示绿色 ✓。标题栏右侧两个按钮（仅 active 状态显示）：[编辑权限]、[追加权限]。<br><b>缩减模式</b>（点击「编辑权限」）：工具变为可取消勾选的 checkbox，取消勾选 = 缩减。底部出现 [取消] [确认缩减]，确认后弹窗列出要移除的工具，确认即时生效。<span class="tag tag-biz">[业务]</span> PRD 3.5：缩减 scope 无需审批直接生效；追加 scope 新增工具需审批。<span class="tag tag-link">[联动]</span> 若某工具正在追加审批中，工具名旁显示橙色「审批中」Badge。'},
+      {id:'KD-05',title:'Dify 部署引导卡片',x:1740,y:340,dotX:1710,dotY:380,
+       desc:'<span class="tag tag-normal">[正常]</span> 仅 active 状态显示。左右两栏：<br>方式一（蓝底推荐）：在预装 TAT Server 的 Header 中粘贴 KEY Value，四步文字引导 + [复制 KEY Value] 按钮。<br>方式二（灰底）：自定义 MCP Server 端点部署，三步引导 + [查看配置详情] 展开 JSON 配置面板（深色代码框），包含 mcpServers URL + headers.Authorization 格式，底部 [复制 JSON 配置]。<span class="tag tag-biz">[业务]</span> PRD 4.1-4.4：预装 + 填 KEY 模式为推荐方案；UAT Server 无需 KEY，完成飞书 OAuth 授权即可用。'},
+      {id:'KD-06',title:'安全管理卡片',x:1740,y:570,dotX:1710,dotY:600,
+       desc:'<span class="tag tag-normal">[正常]</span> 仅 active 状态显示。两个按钮：<br>[🔄 重置 KEY Value]：弹出确认框「旧值将即时失效，使用此 KEY 的所有空间需要更新配置」→ 确认后生成新 KEY Value，旧值立刻失效，scope 不变，无需审批。操作记入操作记录。<br>[🗑 撤销 KEY]（红色危险按钮）：弹出撤销确认弹窗（见「撤销确认弹窗」Tab）。<span class="tag tag-biz">[业务]</span> PRD 5.3：重置仅替换 key_value；撤销即时生效不可恢复。'},
+    ]
+  },
+  {
+    id:'key-detail-tabs', label:'KEY详情·日志Tab',
+    hint:'请在 KEY 详情页底部查看「审计日志」和「操作记录」Tab 切换。',
+    iframeAction: {nav:'my-keys', then:'openDetail'},
+    items:[
+      {id:'KDT-01',title:'审计日志 Tab',x:30,y:100,dotX:410,dotY:540,
+       desc:'<span class="tag tag-normal">[正常]</span> 默认激活的 Tab。顶部搜索框 placeholder「搜索用户名 / 工具名...」，输入即时过滤。日志行格式：时间（等宽字体）| 用户 | MCP Server 名称 | 工具名 | 结果 Badge（成功=绿色，前置拦截=橙色，失败=红色）。<span class="tag tag-default">[缺省]</span> 无记录时显示空状态「暂无调用记录」；搜索无结果显示「无匹配结果」。<span class="tag tag-interact">[交互]</span> 分页每页 20 条，底部「上一页 / 页码 / 下一页」导航。'},
+      {id:'KDT-02',title:'操作记录 Tab',x:1740,y:100,dotX:1710,dotY:540,
+       desc:'<span class="tag tag-normal">[正常]</span> 点击「操作记录」Tab 页签切换显示。表格 5 列：时间 / 类型（Badge 标签：新申请=蓝色，追加=橙色，重置=红色，缩减 scope=橙色）/ 详情描述 / 状态（已通过=绿色，已拒绝=红色，审批中=橙色，已完成=绿色）/ 操作人。合并展示审批记录和管理操作记录，按时间倒序排列。<span class="tag tag-default">[缺省]</span> 无记录时显示「暂无操作记录」。'},
+      {id:'KDT-03',title:'分页组件',x:30,y:360,dotX:410,dotY:680,
+       desc:'<span class="tag tag-normal">[正常]</span> 通用分页：[上一页] 「当前页/总页数（共 N 条）」[下一页]。<span class="tag tag-default">[缺省]</span> 仅 1 页时只显示「共 N 条」。首页禁用「上一页」，末页禁用「下一页」。'},
+    ]
+  },
+  {
+    id:'append-scope', label:'追加权限',
+    hint:'请在 KEY 详情页（active 状态）点击「追加权限」按钮进入。',
+    iframeAction: {nav:'my-keys', then:'openAppend'},
+    items:[
+      {id:'AS-01',title:'页面标题与说明',x:30,y:80,dotX:410,dotY:130,
+       desc:'<span class="tag tag-normal">[正常]</span> 顶部「← 返回详情」按钮。标题：「追加权限 — {KEY 名称}」。灰色说明文字：「灰色勾选项为已有权限（不可取消），新勾选的为本次追加申请。」'},
+      {id:'AS-02',title:'Scope 工具树（混合模式）',x:30,y:280,dotX:410,dotY:300,
+       desc:'<span class="tag tag-normal">[正常]</span> 混合模式工具树：已有权限的工具 checkbox 已勾选且 disabled（灰色不可操作）；未有权限的工具 checkbox 正常可勾选。免审工具旁显示绿色「免审」标签。<span class="tag tag-biz">[业务]</span> PRD 5.3：追加 scope 仅允许新增工具，已有工具不可在此处取消（需通过详情页的「缩减模式」操作）。'},
+      {id:'AS-03',title:'追加理由',x:1740,y:80,dotX:1710,dotY:450,
+       desc:'<span class="tag tag-normal">[正常]</span> 必填多行文本框，placeholder「说明追加权限的业务需求」。<span class="tag tag-validate">[校验]</span> 为空提交 → Toast「请填写追加理由」；未选择新工具提交 → Toast「请选择要追加的工具」。'},
+      {id:'AS-04',title:'提交追加申请',x:1740,y:320,dotX:1710,dotY:530,
+       desc:'<span class="tag tag-normal">[正常]</span> 底部两个按钮：[取消] [提交追加申请]（蓝色主按钮）。<span class="tag tag-interact">[交互]</span> 提交成功 → Toast「追加申请已提交，等待管理员审批」→ 自动返回 KEY 详情页。<span class="tag tag-link">[联动]</span> 提交后详情页权限范围中该工具旁出现橙色「审批中」Badge；侧边栏待审批角标数字 +1。'},
+    ]
+  },
+  {
+    id:'admin-approval', label:'待审批',
+    hint:'审批人视角：处理 KEY 申请和追加权限审批。',
+    iframeAction: {nav:'admin-approval'},
+    items:[
+      {id:'AA-01',title:'待审批列表表格',x:30,y:80,dotX:410,dotY:200,
+       desc:'<span class="tag tag-normal">[正常]</span> 展示所有状态为「待审批」的申请。7 列：申请人（加粗）/ KEY 名称 / 类型（Badge：蓝色「新申请」或橙色「追加」）/ 请求 Scope（按 MCP Server 分行展示工具列表）/ 申请理由（最大宽度 200px）/ 申请时间 / 操作。<span class="tag tag-default">[缺省]</span> 无待审批项时，表格区显示居中文字「暂无待审批的申请」。<span class="tag tag-extreme">[极限]</span> 申请理由文字过长时建议截断或换行展示。'},
+      {id:'AA-02',title:'通过操作',x:30,y:380,dotX:410,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 绿色「通过」按钮。<span class="tag tag-interact">[交互]</span> 点击后即时生效：新申请类型 → KEY 状态变为「生效中」，系统自动生成 KEY Value（mck_ 前缀 + 48 位随机字符）；追加类型 → 新工具合并到已有 KEY 的 scope 中。Toast「已通过审批」，列表自动刷新，角标更新。<span class="tag tag-biz">[业务]</span> PRD 3.2-3.3：审批通过 → 签发 KEY，格式 mck_ + 48位随机字符。DB 仅存 sha256 hash，明文展示一次。'},
+      {id:'AA-03',title:'拒绝操作 + 拒绝弹窗',x:1740,y:80,dotX:1710,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 红色「拒绝」按钮。<span class="tag tag-interact">[交互]</span> 点击弹出拒绝理由弹窗（见「拒绝理由弹窗」Tab），需填写拒绝理由后确认。确认拒绝后：新申请类型 → 对应 pending KEY 从列表移除；Toast「已拒绝申请」，列表刷新。<span class="tag tag-validate">[校验]</span> 拒绝理由不能为空。<span class="tag tag-biz">[业务]</span> PRD 3.2：审批拒绝 → 通知申请人「审批被拒绝」。'},
+    ]
+  },
+  {
+    id:'admin-keys', label:'全部 KEY 台账',
+    hint:'审批人视角：查看和管理全平台所有 KEY。',
+    iframeAction: {nav:'admin-keys'},
+    items:[
+      {id:'AK-01',title:'状态筛选下拉框',x:30,y:80,dotX:410,dotY:120,
+       desc:'<span class="tag tag-normal">[正常]</span> 标题栏右侧下拉框，选项：全部状态 / 生效中 / 审批中 / 已撤销。<span class="tag tag-interact">[交互]</span> 选择后实时过滤表格内容，选「全部状态」显示所有 KEY。'},
+      {id:'AK-02',title:'全平台 KEY 表格',x:30,y:280,dotX:410,dotY:280,
+       desc:'<span class="tag tag-normal">[正常]</span> 7 列：名称（加粗）/ KEY ID（等宽灰色）/ 申请人 / 状态 Badge / Scope 摘要 / 创建时间 / 操作。展示全平台所有用户的 KEY（与「我的 KEY」不同，这里不做用户过滤）。<span class="tag tag-biz">[业务]</span> PRD 5.2：同一申请人允许持有多个 KEY，不同 KEY 的 scope 可重叠。此台账供管理员全局审视。'},
+      {id:'AK-03',title:'强制撤销操作',x:1740,y:80,dotX:1710,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 仅「生效中」的 KEY 显示红色 [强制撤销] 按钮，其余状态显示 "-"。<span class="tag tag-interact">[交互]</span> 点击 → 浏览器确认弹窗「确定要强制撤销此 KEY 吗？此操作不可恢复。」→ 确认后 KEY 状态变为「已撤销」→ Toast「KEY 已强制撤销」→ 表格刷新。<span class="tag tag-biz">[业务]</span> PRD 5.3：撤销即时生效不可恢复，所有使用此 KEY 的空间立刻失去访问权限。<span class="tag tag-extra">[补充]</span> 管理员强制撤销仅用浏览器 confirm，建议增加输入 KEY 名称的二次确认（与申请人自行撤销的安全级别对齐），需产品确认。'},
+    ]
+  },
+  {
+    id:'admin-audit', label:'全局审计日志',
+    hint:'审批人视角：查看全平台 MCP 工具调用日志。',
+    iframeAction: {nav:'admin-audit'},
+    items:[
+      {id:'GA-01',title:'筛选工具栏',x:30,y:80,dotX:410,dotY:120,
+       desc:'<span class="tag tag-normal">[正常]</span> 三个筛选控件水平排列：① 搜索框 placeholder「搜索用户名 / 工具名...」；② 工具下拉：全部工具 / query_bitable / create_record / search_employee / get_user_info / list_chat_messages / send_message；③ 结果下拉：全部结果 / 成功 / 前置拦截 / 失败。<span class="tag tag-interact">[交互]</span> 三个筛选条件为 AND 关系，输入或选择即时触发过滤，无需点击搜索按钮。<span class="tag tag-extra">[补充]</span> 建议增加时间范围筛选器（如近 7 天 / 30 天），便于排查历史问题，当前原型未实现。'},
+      {id:'GA-02',title:'全局日志列表',x:30,y:380,dotX:410,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 日志行格式：时间 | 用户 | MCP Server | 工具名（附灰色小字显示所属 KEY 名称，如 query_bitable (HR考勤项目)）| 结果 Badge。结果三种：成功（绿色）/ 前置拦截（橙色）/ 失败（红色）。<span class="tag tag-default">[缺省]</span> 无匹配结果 → 空状态「暂无匹配的日志」。<span class="tag tag-biz">[业务]</span> PRD 6.2-6.4：每次 MCP 工具调用均写入审计日志，含 key_id 可溯源到具体 KEY。'},
+      {id:'GA-03',title:'分页',x:1740,y:80,dotX:1710,dotY:550,
+       desc:'<span class="tag tag-normal">[正常]</span> 每页 20 条，底部分页导航。格式同通用分页组件：[上一页] 页码信息 [下一页]。'},
+    ]
+  },
+  {
+    id:'modal-revoke', label:'撤销确认弹窗',
+    hint:'请在 KEY 详情页（active 状态）点击「🗑 撤销 KEY」按钮触发。',
+    iframeAction: {nav:'my-keys', then:'openDetail'},
+    items:[
+      {id:'MR-01',title:'撤销确认弹窗',x:30,y:100,dotX:410,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 居中 Modal（最大宽度 480px），半透明黑色遮罩。标题：「⚠️ 确认撤销 KEY」。正文警告：「撤销操作即时生效且不可恢复。所有使用此 KEY 的空间将立即失去对应工具的访问权限。」确认输入区：提示「请输入 KEY 名称「{当前KEY名}」以确认撤销：」+ 文本输入框。底部：[取消] [确认撤销]（红色危险按钮）。<span class="tag tag-validate">[校验]</span> 输入值必须与 KEY 名称完全匹配，否则 Toast「KEY 名称不匹配，请重新输入」，弹窗不关闭。<span class="tag tag-interact">[交互]</span> 匹配成功 → KEY 状态变为「已撤销」→ 关闭弹窗 → Toast「KEY 已撤销」→ 详情页刷新（安全管理卡片、部署引导等隐藏）。取消 → 仅关闭弹窗。<span class="tag tag-biz">[业务]</span> PRD 5.3：撤销不可恢复。PRD 9.1 K2：撤销后请求返回 403 KEY_REVOKED。输入名称二次确认是防误操作的安全设计。'},
+    ]
+  },
+  {
+    id:'modal-reject', label:'拒绝理由弹窗',
+    hint:'请在「待审批」页面点击某条申请的「拒绝」按钮触发。',
+    iframeAction: {nav:'admin-approval'},
+    items:[
+      {id:'MJ-01',title:'拒绝理由弹窗',x:30,y:100,dotX:410,dotY:350,
+       desc:'<span class="tag tag-normal">[正常]</span> 居中 Modal。标题：「拒绝申请」。表单：必填多行文本框「拒绝理由」（带红色 * 号），placeholder「请说明拒绝原因」。底部：[取消] [确认拒绝]（红色危险按钮）。<span class="tag tag-validate">[校验]</span> 拒绝理由为空时点击确认 → Toast「请填写拒绝理由」，弹窗不关闭。<span class="tag tag-interact">[交互]</span> 确认拒绝 → 申请状态变为「已拒绝」，新申请类型对应的 pending KEY 从系统删除 → 关闭弹窗 → Toast「已拒绝申请」→ 待审批列表刷新 + 角标更新。取消 → 仅关闭弹窗。'},
+    ]
+  },
+];
+
+// ============ BUILD DOM ============
+const tabBar = document.getElementById('tabBar');
+const canvasInner = document.getElementById('canvasInner');
+const svgLayer = document.getElementById('svgLayer');
+const sharedIframe = document.getElementById('sharedIframe');
+const iframeHint = document.getElementById('iframeHint');
+
+let activeViewIdx = 0;
+let selectedAnno = null;
+let dragState = null;
+let dotDragState = null;
+let iframeReady = false;
+
+// Create tab buttons and annotation groups
+VIEWS.forEach((view, vi) => {
+  // Tab button
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn' + (vi === 0 ? ' active' : '');
+  btn.textContent = view.label;
+  btn.onclick = () => switchView(vi);
+  tabBar.appendChild(btn);
+
+  // Annotation group container
+  const group = document.createElement('div');
+  group.className = 'anno-group' + (vi === 0 ? ' active' : '');
+  group.id = 'group-' + view.id;
+  group.dataset.viewIdx = vi;
+
+  view.items.forEach((item, ii) => {
+    // SVG line (all lines in single shared SVG)
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.id = `line-${view.id}-${ii}`;
+    line.setAttribute('x1', item.x + 140);
+    line.setAttribute('y1', item.y + 13);
+    line.setAttribute('x2', item.dotX);
+    line.setAttribute('y2', item.dotY);
+    line.dataset.groupId = view.id;
+    line.style.display = vi === 0 ? '' : 'none';
+    svgLayer.appendChild(line);
+
+    // Dot handle
+    const dot = document.createElement('div');
+    dot.className = 'dot-handle';
+    dot.style.cssText = `left:${item.dotX - 5}px;top:${item.dotY - 5}px`;
+    dot.dataset.viewIdx = vi;
+    dot.dataset.itemIdx = ii;
+    group.appendChild(dot);
+
+    // Annotation box
+    const box = document.createElement('div');
+    box.className = 'anno-box';
+    box.style.cssText = `left:${item.x}px;top:${item.y}px`;
+    box.dataset.viewIdx = vi;
+    box.dataset.itemIdx = ii;
+    box.innerHTML = `
+      <div class="nudge-bar">
+        <button class="nudge-btn" data-dir="up">&#9650;</button>
+        <button class="nudge-btn" data-dir="down">&#9660;</button>
+        <button class="nudge-btn" data-dir="left">&#9664;</button>
+        <button class="nudge-btn" data-dir="right">&#9654;</button>
+      </div>
+      <div class="anno-drag"><span class="drag-dots">&#x2630;</span><span class="anno-id">${item.id}</span></div>
+      <div class="anno-title" contenteditable="true">${item.title}</div>
+      <div class="anno-desc" contenteditable="true">${item.desc}</div>
+    `;
+    group.appendChild(box);
+  });
+
+  canvasInner.appendChild(group);
+});
+
+// ============ IFRAME READY (via postMessage) ============
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (d && d.source === 'mcp-key-demo' && d.status === 'ready') {
+    iframeReady = true;
+    syncIframeToView(activeViewIdx);
+  }
+});
+// Fallback: also listen for load event
+sharedIframe.addEventListener('load', () => {
+  // Give demo script time to set up listener
+  setTimeout(() => { iframeReady = true; syncIframeToView(activeViewIdx); }, 200);
+});
+
+function postToIframe(msg) {
+  msg.source = 'anno-doc';
+  sharedIframe.contentWindow.postMessage(msg, '*');
+}
+
+// ============ SWITCH VIEW ============
+function switchView(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+  document.querySelectorAll('.anno-group').forEach((g,i) => g.classList.toggle('active', i===idx));
+  svgLayer.querySelectorAll('line').forEach(l => {
+    l.style.display = VIEWS[idx] && l.dataset.groupId === VIEWS[idx].id ? '' : 'none';
+  });
+  activeViewIdx = idx;
+  selectedAnno = null;
+  document.querySelectorAll('.anno-box.selected').forEach(b => b.classList.remove('selected'));
+  iframeHint.textContent = VIEWS[idx].hint;
+  syncIframeToView(idx);
+  requestAnimationFrame(() => {
+    VIEWS[idx].items.forEach((item, ii) => { updateLine(idx, ii); });
+  });
+}
+
+function syncIframeToView(idx) {
+  if (!iframeReady) return;
+  const view = VIEWS[idx];
+  const action = view.iframeAction;
+  if (!action) return;
+
+  // Step 1: navigate to page
+  postToIframe({action:'nav', page: action.nav});
+
+  // Step 2: detail page
+  if (action.then === 'openDetail') {
+    setTimeout(() => postToIframe({action:'openDetail', keyId:'key_001'}), 120);
+  }
+
+  // Step 2b: append scope (detail then append)
+  if (action.then === 'openAppend') {
+    setTimeout(() => postToIframe({action:'openAppend', keyId:'key_001'}), 120);
+  }
+
+  // Step 2c: wizard steps
+  if (action.wizardStep && action.wizardStep >= 2) {
+    setTimeout(() => {
+      postToIframe({action:'wizardFill'});
+      setTimeout(() => {
+        postToIframe({action:'wizardNext', step:2});
+        if (action.wizardStep >= 3) {
+          setTimeout(() => {
+            postToIframe({action:'wizardSelectTools'});
+            setTimeout(() => postToIframe({action:'wizardNext', step:3}), 150);
+          }, 150);
+        }
+      }, 100);
+    }, 100);
+  }
+}
+
+// ============ DRAG ANNO BOX ============
+document.addEventListener('mousedown', e => {
+  const dragHandle = e.target.closest('.anno-drag');
+  if (dragHandle) {
+    e.preventDefault();
+    const box = dragHandle.closest('.anno-box');
+    const vi = +box.dataset.viewIdx;
+    const ii = +box.dataset.itemIdx;
+    document.querySelectorAll('.anno-box.selected').forEach(b => b.classList.remove('selected'));
+    box.classList.add('selected');
+    selectedAnno = {vi, ii, box};
+    dragState = {
+      box, vi, ii,
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      startBoxX: parseInt(box.style.left),
+      startBoxY: parseInt(box.style.top),
+    };
+    document.body.style.userSelect = 'none';
+    return;
+  }
+
+  const dotEl = e.target.closest('.dot-handle');
+  if (dotEl) {
+    e.preventDefault();
+    dotDragState = {
+      dot: dotEl,
+      vi: +dotEl.dataset.viewIdx,
+      ii: +dotEl.dataset.itemIdx,
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      startDotX: parseInt(dotEl.style.left) + 5,
+      startDotY: parseInt(dotEl.style.top) + 5,
+    };
+    document.body.style.userSelect = 'none';
+    return;
+  }
+
+  const annoBox = e.target.closest('.anno-box');
+  if (annoBox && !e.target.closest('.anno-title') && !e.target.closest('.anno-desc')) {
+    document.querySelectorAll('.anno-box.selected').forEach(b => b.classList.remove('selected'));
+    annoBox.classList.add('selected');
+    selectedAnno = {vi: +annoBox.dataset.viewIdx, ii: +annoBox.dataset.itemIdx, box: annoBox};
+  }
+
+  const nudgeBtn = e.target.closest('.nudge-btn');
+  if (nudgeBtn && selectedAnno) {
+    e.preventDefault();
+    const dir = nudgeBtn.dataset.dir;
+    const box = selectedAnno.box;
+    let x = parseInt(box.style.left);
+    let y = parseInt(box.style.top);
+    if (dir === 'up') y -= 10;
+    if (dir === 'down') y += 10;
+    if (dir === 'left') x -= 10;
+    if (dir === 'right') x += 10;
+    box.style.left = x + 'px';
+    box.style.top = y + 'px';
+    updateLine(selectedAnno.vi, selectedAnno.ii);
+  }
+});
+
+let rafId = null;
+document.addEventListener('mousemove', e => {
+  if (!dragState && !dotDragState) return;
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+    if (dragState) {
+      const dx = e.clientX - dragState.startMouseX;
+      const dy = e.clientY - dragState.startMouseY;
+      dragState.box.style.left = (dragState.startBoxX + dx) + 'px';
+      dragState.box.style.top = (dragState.startBoxY + dy) + 'px';
+      updateLine(dragState.vi, dragState.ii);
+    }
+    if (dotDragState) {
+      const dx = e.clientX - dotDragState.startMouseX;
+      const dy = e.clientY - dotDragState.startMouseY;
+      const nx = dotDragState.startDotX + dx;
+      const ny = dotDragState.startDotY + dy;
+      dotDragState.dot.style.left = (nx - 5) + 'px';
+      dotDragState.dot.style.top = (ny - 5) + 'px';
+      updateLineFromDot(dotDragState.vi, dotDragState.ii, nx, ny);
+    }
+  });
+});
+
+document.addEventListener('mouseup', () => {
+  dragState = null;
+  dotDragState = null;
+  document.body.style.userSelect = '';
+});
+
+function updateLine(vi, ii) {
+  const view = VIEWS[vi];
+  const line = document.getElementById(`line-${view.id}-${ii}`);
+  const group = document.getElementById('group-' + view.id);
+  if (!line || !group) return;
+  const box = group.querySelector(`.anno-box[data-item-idx="${ii}"]`);
+  if (!box) return;
+  const bx = parseInt(box.style.left);
+  const by = parseInt(box.style.top);
+  const bw = box.offsetWidth;
+  const bh = box.offsetHeight;
+  line.setAttribute('x1', bx + bw / 2);
+  line.setAttribute('y1', by + bh / 2);
+}
+
+function updateLineFromDot(vi, ii, nx, ny) {
+  const view = VIEWS[vi];
+  const line = document.getElementById(`line-${view.id}-${ii}`);
+  if (!line) return;
+  line.setAttribute('x2', nx);
+  line.setAttribute('y2', ny);
+}
+
+// Initial line positioning
+requestAnimationFrame(() => {
+  VIEWS[0].items.forEach((item, ii) => { updateLine(0, ii); });
+});
+</script>
+</body>
+</html>
