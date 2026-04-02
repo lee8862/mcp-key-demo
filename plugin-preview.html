@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP 服务一键安装 — 插件预览</title>
+<style>
+  :root {
+    --primary: #3370FF;
+    --primary-dark: #245BDB;
+    --primary-light: #EEF3FF;
+    --green: #00B42A;
+    --green-light: #E8FFEA;
+    --red: #F53F3F;
+    --red-light: #FFECE8;
+    --orange: #FF7D00;
+    --orange-light: #FFF7E8;
+    --gray-50: #F7F8FA;
+    --gray-100: #F0F1F5;
+    --gray-200: #E0E2E7;
+    --gray-300: #C9CDD4;
+    --gray-400: #9DA3AE;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.18);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  .container {
+    background: #fff; border-radius: 16px; box-shadow: var(--shadow-lg);
+    max-width: 560px; width: 100%; overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    padding: 32px 36px; color: #fff;
+  }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.15); padding: 4px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 500; margin-bottom: 12px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .header p { font-size: 14px; opacity: .85; line-height: 1.6; }
+
+  /* Body */
+  .body { padding: 28px 36px 36px; }
+
+  /* KEY Input Section */
+  .input-group { margin-bottom: 24px; }
+  .input-label {
+    font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .input-wrapper {
+    display: flex; gap: 0; border: 2px solid var(--gray-200); border-radius: 10px;
+    overflow: hidden; transition: border-color .2s;
+  }
+  .input-wrapper:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(51,112,255,.1); }
+  .key-input {
+    flex: 1; padding: 12px 16px; border: none; outline: none; font-size: 14px;
+    font-family: 'SF Mono', Monaco, 'Fira Code', monospace; color: var(--gray-800);
+    letter-spacing: .5px;
+  }
+  .key-input::placeholder { color: var(--gray-300); font-family: inherit; letter-spacing: 0; }
+  .install-btn {
+    padding: 12px 24px; background: var(--primary); color: #fff; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s;
+    white-space: nowrap;
+  }
+  .install-btn:hover { background: var(--primary-dark); }
+  .install-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+  /* Info Cards */
+  .info-section { margin-bottom: 24px; }
+  .info-title {
+    font-size: 12px; font-weight: 600; color: var(--gray-400); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .info-card {
+    display: flex; align-items: flex-start; gap: 12px; padding: 14px;
+    background: var(--gray-50); border-radius: 10px; margin-bottom: 8px;
+    border: 1px solid var(--gray-100);
+  }
+  .info-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .info-card h4 { font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 3px; }
+  .info-card p { font-size: 12px; color: var(--gray-500); line-height: 1.5; }
+
+  /* Services Preview */
+  .services-preview { margin-bottom: 24px; }
+  .service-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border: 1px solid var(--gray-100); border-radius: 8px; margin-bottom: 6px;
+    font-size: 13px; transition: all .15s;
+  }
+  .service-row:hover { border-color: var(--primary); background: var(--primary-light); }
+  .service-emoji { font-size: 18px; }
+  .service-name { font-weight: 600; color: var(--gray-700); flex: 1; }
+  .service-tools { font-size: 11px; color: var(--gray-400); }
+  .service-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .status-pending { background: var(--gray-100); color: var(--gray-400); }
+  .status-success { background: var(--green-light); color: var(--green); }
+  .status-error { background: var(--red-light); color: var(--red); }
+  .status-installing { background: var(--orange-light); color: var(--orange); }
+
+  /* Result Section */
+  .result { display: none; padding: 16px; border-radius: 10px; margin-bottom: 16px; }
+  .result.show { display: block; }
+  .result-success { background: var(--green-light); border: 1px solid #B7EB8F; }
+  .result-error { background: var(--red-light); border: 1px solid #FFA39E; }
+  .result h3 { font-size: 14px; margin-bottom: 4px; }
+  .result p { font-size: 12px; line-height: 1.5; }
+
+  /* Progress */
+  .progress-bar {
+    height: 4px; background: var(--gray-100); border-radius: 2px; overflow: hidden;
+    margin-bottom: 16px; display: none;
+  }
+  .progress-bar.show { display: block; }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--primary), #6366f1);
+    border-radius: 2px; width: 0; transition: width .5s ease;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 16px 36px; border-top: 1px solid var(--gray-100);
+    font-size: 11px; color: var(--gray-400); text-align: center; line-height: 1.6;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* Preview Badge */
+  .preview-badge {
+    position: fixed; top: 16px; right: 16px; background: rgba(0,0,0,.6);
+    color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 12px;
+    backdrop-filter: blur(8px); z-index: 100;
+  }
+
+  /* Console */
+  .console-panel {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b;
+    max-height: 240px; overflow-y: auto; padding: 16px 20px;
+    font-family: 'SF Mono', Monaco, monospace; font-size: 12px;
+    color: #94a3b8; display: none; z-index: 100;
+    border-top: 2px solid #3b82f6;
+  }
+  .console-panel.show { display: block; }
+  .console-panel .log-line { margin-bottom: 4px; line-height: 1.6; }
+  .console-panel .log-method { color: #22c55e; font-weight: 600; }
+  .console-panel .log-url { color: #60a5fa; }
+  .console-panel .log-payload { color: #f59e0b; }
+  .console-panel .log-success { color: #22c55e; }
+  .console-panel .log-divider { border-top: 1px solid #334155; margin: 8px 0; }
+  .console-toggle {
+    position: fixed; bottom: 16px; right: 16px; background: #1e293b;
+    color: #94a3b8; border: 1px solid #334155; padding: 6px 14px;
+    border-radius: 6px; font-size: 12px; cursor: pointer; z-index: 101;
+    font-family: monospace;
+  }
+  .console-toggle:hover { background: #334155; }
+
+  /* Animations */
+  @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .animate { animation: slideIn .3s ease-out; }
+  @keyframes pulse {
+    0%,100% { opacity:1; }
+    50% { opacity:.5; }
+  }
+  .installing { animation: pulse 1.5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<div class="preview-badge">🧪 插件预览模式 · Mock 数据</div>
+<button class="console-toggle" onclick="toggleConsole()">⌥ 控制台</button>
+<div class="console-panel" id="console-panel"></div>
+
+<div class="container animate">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">🔌 Dify Plugin · MCP 服务一键安装</div>
+    <h1>安装 MCP 服务到工作空间</h1>
+    <p>输入你的 MCP KEY，插件将自动解析授权范围，<br>并在当前 Dify 空间创建对应的 MCP Server 连接。</p>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+    <!-- Result Banner (initially hidden) -->
+    <div class="result" id="result-banner"></div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <!-- KEY Input -->
+    <div class="input-group">
+      <div class="input-label">🔑 MCP KEY Value</div>
+      <div class="input-wrapper">
+        <input type="text" class="key-input" id="key-input"
+               value="mcp_key_demo_a3f8b2c1d4e5f6"
+               autocomplete="off" spellcheck="false">
+        <button class="install-btn" id="install-btn" onclick="startInstall()">🚀 确认安装</button>
+      </div>
+    </div>
+
+    <!-- Usage Instructions -->
+    <div class="info-section">
+      <div class="info-title">使用说明</div>
+      <div class="info-card">
+        <span class="info-icon">📋</span>
+        <div>
+          <h4>如何获取 KEY？</h4>
+          <p>在 MCP KEY 管理平台申请并审批通过后，进入我的 KEY 详情页复制 KEY Value。</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <span class="info-icon">⚡</span>
+        <div>
+          <h4>安装后会发生什么？</h4>
+          <p>插件解析 KEY 的授权范围，自动在当前空间创建 MCP Server 连接。每个 Server 的认证 Header 会自动填入你的 KEY。<br>服务命名格式：<code style="background:var(--gray-100);padding:2px 6px;border-radius:3px;font-size:11px">mcp-{key_id}-{server_id}</code></p>
+        </div>
+      </div>
+      <div class="info-card">
+        <span class="info-icon">🔄</span>
+        <div>
+          <h4>KEY 重置或 scope 变更怎么办？</h4>
+          <p>重新粘贴新 KEY 并点击安装，插件会通过 <code style="background:var(--gray-100);padding:2px 6px;border-radius:3px;font-size:11px">server_identifier</code> 识别已有连接，自动更新而非重复创建。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Services Preview -->
+    <div class="services-preview">
+      <div class="info-title">将安装的 MCP 服务</div>
+      <div class="service-row" id="svc-bitable">
+        <span class="service-emoji">📊</span>
+        <span class="service-name">飞书多维表格</span>
+        <span class="service-tools">4 个工具</span>
+        <span class="service-status status-pending" id="status-bitable">等待安装</span>
+      </div>
+      <div class="service-row" id="svc-calendar">
+        <span class="service-emoji">📅</span>
+        <span class="service-name">飞书日历</span>
+        <span class="service-tools">3 个工具</span>
+        <span class="service-status status-pending" id="status-calendar">等待安装</span>
+      </div>
+      <div class="service-row" id="svc-contacts">
+        <span class="service-emoji">👥</span>
+        <span class="service-name">飞书通讯录</span>
+        <span class="service-tools">3 个工具</span>
+        <span class="service-status status-pending" id="status-contacts">等待安装</span>
+      </div>
+      <div class="service-row" id="svc-im">
+        <span class="service-emoji">💬</span>
+        <span class="service-name">飞书即时消息</span>
+        <span class="service-tools">2 个工具</span>
+        <span class="service-status status-pending" id="status-im">等待安装</span>
+      </div>
+      <div class="service-row" id="svc-attendance">
+        <span class="service-emoji">⏰</span>
+        <span class="service-name">飞书考勤</span>
+        <span class="service-tools">2 个工具</span>
+        <span class="service-status status-pending" id="status-attendance">等待安装</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    MCP KEY 管理平台 · 插件版本 v0.1.0<br>
+    安装遇到问题？请联系 AI 平台部 或查看帮助文档
+  </div>
+</div>
+
+<script>
+const MCP_BASE = 'https://mcp.internal.kurogames.com';
+
+const PRESET_SERVICES = [
+  {
+    id: 'bitable', name: '飞书多维表格', icon: '📊', icon_bg: '#FF7D00',
+    path: '/feishu-bitable/sse', identifier_suffix: 'feishu-bitable',
+    tools: ['query_bitable', 'create_record', 'update_record', 'delete_record']
+  },
+  {
+    id: 'calendar', name: '飞书日历', icon: '📅', icon_bg: '#3370FF',
+    path: '/feishu-calendar/sse', identifier_suffix: 'feishu-calendar',
+    tools: ['list_events', 'create_event', 'get_freebusy']
+  },
+  {
+    id: 'contacts', name: '飞书通讯录', icon: '👥', icon_bg: '#00B42A',
+    path: '/feishu-contacts/sse', identifier_suffix: 'feishu-contacts',
+    tools: ['search_employee', 'get_user_info', 'list_department']
+  },
+  {
+    id: 'im', name: '飞书即时消息', icon: '💬', icon_bg: '#6366F1',
+    path: '/feishu-im/sse', identifier_suffix: 'feishu-im',
+    tools: ['list_chat_messages', 'send_message']
+  },
+  {
+    id: 'attendance', name: '飞书考勤', icon: '⏰', icon_bg: '#F53F3F',
+    path: '/feishu-attendance/sse', identifier_suffix: 'feishu-attendance',
+    tools: ['get_attendance', 'list_leave_records']
+  }
+];
+
+// Console logging
+function logToConsole(html) {
+  const panel = document.getElementById('console-panel');
+  panel.innerHTML += `<div class="log-line">${html}</div>`;
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function toggleConsole() {
+  document.getElementById('console-panel').classList.toggle('show');
+}
+
+function setStatus(svcId, status, text) {
+  const el = document.getElementById('status-' + svcId);
+  el.className = 'service-status status-' + status;
+  el.textContent = text;
+}
+
+function showResult(type, title, message) {
+  const banner = document.getElementById('result-banner');
+  banner.className = 'result show result-' + type + ' animate';
+  banner.innerHTML = '<h3>' + (type === 'success' ? '✅ ' : '❌ ') + title + '</h3><p>' + message + '</p>';
+}
+
+// Simple SHA-256 mock (first 8 chars)
+function mockKeyId(key) {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    const c = key.charCodeAt(i);
+    hash = ((hash << 5) - hash) + c;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16).padStart(8, '0').slice(0, 8);
+}
+
+async function startInstall() {
+  const keyValue = document.getElementById('key-input').value.trim();
+  if (!keyValue) {
+    document.getElementById('key-input').focus();
+    document.querySelector('.input-wrapper').style.borderColor = '#F53F3F';
+    setTimeout(() => document.querySelector('.input-wrapper').style.borderColor = '', 2000);
+    return;
+  }
+
+  // Show console
+  document.getElementById('console-panel').classList.add('show');
+  document.getElementById('console-panel').innerHTML = '';
+
+  const btn = document.getElementById('install-btn');
+  btn.disabled = true;
+  btn.textContent = '安装中...';
+
+  const progressBar = document.getElementById('progress-bar');
+  const progressFill = document.getElementById('progress-fill');
+  progressBar.classList.add('show');
+  progressFill.style.width = '0%';
+
+  const keyId = mockKeyId(keyValue);
+  logToConsole(`<span class="log-success">▶ 开始安装，KEY ID: ${keyId}</span>`);
+  logToConsole(`<span>  KEY Value: ${keyValue.slice(0,12)}...${keyValue.slice(-4)}</span>`);
+  logToConsole('<div class="log-divider"></div>');
+
+  let installed = 0;
+  const total = PRESET_SERVICES.length;
+
+  for (let i = 0; i < PRESET_SERVICES.length; i++) {
+    const svc = PRESET_SERVICES[i];
+    setStatus(svc.id, 'installing', '安装中...');
+    document.getElementById('svc-' + svc.id).classList.add('installing');
+
+    const serverIdentifier = `mcp-${keyId}-${svc.identifier_suffix}`;
+    const serverUrl = `${MCP_BASE}${svc.path}`;
+
+    const payload = {
+      server_url: serverUrl,
+      name: serverIdentifier,
+      icon_type: "emoji",
+      icon: svc.icon,
+      icon_background: svc.icon_bg,
+      headers: { Authorization: `Bearer ${keyValue}` },
+      configuration: { timeout: 30, sse_read_timeout: 300 },
+      server_identifier: serverIdentifier,
+      is_dynamic_registration: true,
+      authentication: { client_id: "", client_secret: "" }
+    };
+
+    // Log to console
+    logToConsole(`<span class="log-method">POST</span> <span class="log-url">/console/api/workspaces/current/tool-provider/mcp</span>`);
+    logToConsole(`<span class="log-payload">${JSON.stringify(payload, null, 0).slice(0, 120)}...</span>`);
+
+    // Simulate API call delay
+    await new Promise(r => setTimeout(r, 800 + Math.random() * 400));
+
+    document.getElementById('svc-' + svc.id).classList.remove('installing');
+
+    // Mock response
+    const mockResponse = {
+      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      name: serverIdentifier,
+      server_url: serverUrl,
+      is_dynamic_registration: true,
+      label: { zh_Hans: svc.name, en_US: svc.name }
+    };
+
+    logToConsole(`<span class="log-success">✓ 201 Created → ${svc.name} (${serverIdentifier})</span>`);
+
+    setStatus(svc.id, 'success', '✓ 已安装');
+    installed++;
+
+    progressFill.style.width = ((i + 1) / total * 100) + '%';
+
+    if (i < PRESET_SERVICES.length - 1) {
+      logToConsole('<div class="log-divider"></div>');
+    }
+  }
+
+  logToConsole('<div class="log-divider"></div>');
+  logToConsole(`<span class="log-success">✅ 全部完成：${installed}/${total} 个服务已安装</span>`);
+
+  showResult('success', '全部安装成功',
+    `已在当前工作空间创建 ${installed} 个 MCP Server 连接。<br>` +
+    '现在可以在工作流中使用「MCP」节点调用这些工具了。');
+
+  btn.textContent = '🔄 重新安装';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
