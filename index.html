@@ -341,29 +341,29 @@
           <div class="card-title">Dify 部署引导</div>
         </div>
         <div style="display:flex;gap:16px">
-          <!-- 推荐方式：插件 -->
+          <!-- 方式一：预装 Server 填 KEY -->
           <div style="flex:1;background:var(--primary-light);border:1px solid #c5d4f7;border-radius:8px;padding:16px">
-            <div style="font-weight:600;font-size:13px;color:var(--primary-dark);margin-bottom:8px">✨ 方式一：MCP 配置插件（推荐）</div>
+            <div style="font-weight:600;font-size:13px;color:var(--primary-dark);margin-bottom:8px">✨ 方式一：在预装 MCP Server 中填入 KEY（推荐）</div>
             <ol style="font-size:13px;color:var(--gray-600);margin:0;padding-left:18px;line-height:2">
-              <li>进入 Dify 空间 → 找到「MCP 服务配置」插件页面</li>
-              <li>粘贴 KEY Value → 点击「安装」</li>
-              <li>插件自动安装所有已授权的 MCP 服务</li>
-              <li>scope 变更后，点击「🔄 同步更新」即可</li>
+              <li>进入 Dify 空间 → 工具 → MCP，找到已预装的 TAT Server</li>
+              <li>在对应 Server 配置的 Header 中粘贴 KEY Value</li>
+              <li>保存后该 Server 即可正常使用</li>
+              <li>UAT Server 无需 KEY，完成飞书 OAuth 授权后直接可用</li>
             </ol>
             <div style="margin-top:10px">
               <button class="btn btn-sm btn-primary" onclick="copyKeyValue()">复制 KEY Value</button>
             </div>
           </div>
-          <!-- 备选方式：手动 -->
+          <!-- 方式二：自定义端点 -->
           <div style="flex:1;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:16px">
-            <div style="font-weight:600;font-size:13px;color:var(--gray-600);margin-bottom:8px">📋 方式二：手动配置</div>
+            <div style="font-weight:600;font-size:13px;color:var(--gray-600);margin-bottom:8px">📋 方式二：自定义 MCP Server 端点</div>
             <ol style="font-size:13px;color:var(--gray-500);margin:0;padding-left:18px;line-height:2">
               <li>进入 Dify 空间 → 工具 → MCP → 添加 MCP Server</li>
-              <li>按下方列表逐个添加 Server URL</li>
-              <li>每个 Server 的 Header 填入同一个 KEY</li>
+              <li>填写自定义 Server URL（如私有化部署端点）</li>
+              <li>在 Header 中填入 KEY Value</li>
             </ol>
             <div style="margin-top:10px">
-              <button class="btn btn-sm" onclick="toggleManualConfig()">查看手动配置详情</button>
+              <button class="btn btn-sm" onclick="toggleManualConfig()">查看配置详情</button>
             </div>
           </div>
         </div>
@@ -1029,7 +1029,7 @@ function copyDifyConfig() {
 function copyKeyValue() {
   const key = KEYS.find(k => k.id === currentKeyId);
   if (key) {
-    navigator.clipboard.writeText(key.key_value).then(() => showToast('KEY Value 已复制，可粘贴到 Dify 插件'));
+    navigator.clipboard.writeText(key.key_value).then(() => showToast('KEY Value 已复制，可粘贴到 Dify MCP Server 配置'));
   }
 }
 
@@ -1225,11 +1225,24 @@ function confirmScopeReduction() {
   openKeyDetail(currentKeyId);
 }
 
+// ==================== Free-Audit Helper ====================
+// 收集指定用户名下所有 status=active 的 KEY 覆盖的工具集合
+function getApprovedToolsForUser(uid) {
+  const approvedTools = new Set();
+  KEYS.filter(k => k.applicant_uid === uid && k.status === 'active').forEach(k => {
+    k.scope.forEach(s => {
+      s.tools.forEach(t => approvedTools.add(t));
+    });
+  });
+  return approvedTools;
+}
+
 // ==================== Scope Tree Renderer ====================
-function renderScopeTree(containerId, scope, selectable, disabledTools) {
+function renderScopeTree(containerId, scope, selectable, disabledTools, freeAuditTools) {
   const container = document.getElementById(containerId);
   const scopeMap = {};
   scope.forEach(s => { scopeMap[s.mcp_id] = s.tools; });
+  const freeSet = freeAuditTools || new Set();
 
   container.innerHTML = MCP_SERVERS.map(server => {
     const activeTools = scopeMap[server.id] || [];
@@ -1239,6 +1252,9 @@ function renderScopeTree(containerId, scope, selectable, disabledTools) {
     const toolsHtml = server.tools.map(tool => {
       const isActive = activeTools.includes(tool.id);
       const isDisabled = disabledTools.includes(tool.id);
+      const isFreeAudit = freeSet.has(tool.id);
+      const showFreeAudit = isFreeAudit && !isDisabled;
+      const freeAuditBadge = showFreeAudit ? ' <span style="font-size:11px;color:var(--success);margin-left:4px;font-weight:500">免审</span>' : '';
       const checkboxHtml = selectable
         ? `<input type="checkbox" ${isActive || isDisabled ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
             data-server="${server.id}" data-tool="${tool.id}"
@@ -1247,7 +1263,7 @@ function renderScopeTree(containerId, scope, selectable, disabledTools) {
       const pendingReq = SCOPE_REQUESTS.find(r => r.approval_status === 'pending' && r.key_id === currentKeyId &&
         r.requested_scope.some(s => s.mcp_id === server.id && s.tools.includes(tool.id)));
       const pendingBadge = pendingReq ? ' <span class="badge badge-pending" style="font-size:10px">审批中</span>' : '';
-      return `<div class="scope-tool">${checkboxHtml}<span class="tool-name">${tool.name}</span><span class="tool-desc">${tool.desc}</span>${pendingBadge}</div>`;
+      return `<div class="scope-tool">${checkboxHtml}<span class="tool-name">${tool.name}</span><span class="tool-desc">${tool.desc}</span>${freeAuditBadge}${pendingBadge}</div>`;
     }).join('');
 
     return `<div class="scope-server">
@@ -1293,7 +1309,8 @@ function initWizard() {
   document.getElementById('new-key-name').value = '';
   document.getElementById('new-key-desc').value = '';
   document.getElementById('new-key-reason').value = '';
-  renderScopeTree('wizard-scope-tree', [], true, []);
+  const freeAuditTools = getApprovedToolsForUser('u001');
+  renderScopeTree('wizard-scope-tree', [], true, [], freeAuditTools);
   updateWizardSummary();
 }
 
@@ -1311,9 +1328,20 @@ function wizardNext(step) {
     document.getElementById('confirm-name').textContent = document.getElementById('new-key-name').value;
     document.getElementById('confirm-desc').textContent = document.getElementById('new-key-desc').value || '（无）';
     document.getElementById('confirm-reason').textContent = document.getElementById('new-key-reason').value;
-    document.getElementById('confirm-scope').textContent = getScopeSummaryFromScope(scope);
+    // 免审统计
+    const approvedTools = getApprovedToolsForUser('u001');
+    const totalTools = scope.reduce((sum, s) => sum + s.tools.length, 0);
+    const freeCount = scope.reduce((sum, s) => sum + s.tools.filter(t => approvedTools.has(t)).length, 0);
+    const needAuditCount = totalTools - freeCount;
+    let scopeLabel = getScopeSummaryFromScope(scope);
+    if (freeCount > 0 && needAuditCount === 0) {
+      scopeLabel += ' <span style="color:var(--success);font-size:12px;font-weight:500">（全部免审，无需审核直接创建）</span>';
+    } else if (freeCount > 0) {
+      scopeLabel += ` <span style="color:var(--success);font-size:12px">(${freeCount}个免审)</span>`;
+    }
+    document.getElementById('confirm-scope').innerHTML = scopeLabel;
     document.getElementById('confirm-scope-detail').innerHTML = '';
-    renderScopeTree('confirm-scope-detail', scope, false, []);
+    renderScopeTree('confirm-scope-detail', scope, false, [], approvedTools);
   }
   wizardStep = step;
   updateWizardUI();
@@ -1344,11 +1372,15 @@ function updateWizardSummary() {
     container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">尚未选择任何工具</div>';
     return;
   }
+  const approvedTools = getApprovedToolsForUser('u001');
   container.innerHTML = scope.map(s => {
     const server = MCP_SERVERS.find(m => m.id === s.mcp_id);
     return `<div style="margin-bottom:8px">
       <div style="font-size:12px;color:var(--gray-500)">${server?.name || s.mcp_id}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${s.tools.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${s.tools.map(t => {
+        const freeLabel = approvedTools.has(t) ? '<span style="font-size:10px;color:var(--success);margin-left:2px">免审</span>' : '';
+        return `<span class="tag">${t}${freeLabel}</span>`;
+      }).join('')}</div>
     </div>`;
   }).join('');
 }
@@ -1359,23 +1391,89 @@ function submitNewKey() {
   const reason = document.getElementById('new-key-reason').value.trim();
   const scope = getSelectedScope('wizard-scope-tree');
 
-  const newKeyId = 'key_' + String(KEYS.length + 1).padStart(3, '0');
-  KEYS.push({
-    id: newKeyId, key_value: '', name, description: desc,
-    applicant: '张三丰', applicant_uid: 'u001',
-    status: 'pending_approval', scope,
-    created_at: new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-'),
-    last_call: null,
-    calls_7d: 0,
+  // 免审判定：检查当前用户已有 active KEY 覆盖了哪些工具
+  const approvedTools = getApprovedToolsForUser('u001');
+  const allSelectedTools = [];
+  const needAuditTools = [];
+  const freeAuditToolsList = [];
+  scope.forEach(s => {
+    s.tools.forEach(t => {
+      allSelectedTools.push(t);
+      if (approvedTools.has(t)) {
+        freeAuditToolsList.push(t);
+      } else {
+        needAuditTools.push(t);
+      }
+    });
   });
 
-  SCOPE_REQUESTS.push({
-    id: 'req_' + String(SCOPE_REQUESTS.length + 1).padStart(3, '0'),
-    key_id: null, request_type: 'new', applicant: '张三丰', applicant_uid: 'u001',
-    key_name: name, requested_scope: scope, reason,
-    approval_status: 'pending',
-    created_at: new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-'),
-  });
+  const allFreeAudit = needAuditTools.length === 0;
+  const partialFreeAudit = freeAuditToolsList.length > 0 && needAuditTools.length > 0;
+
+  const now = new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-');
+  const newKeyId = 'key_' + String(KEYS.length + 1).padStart(3, '0');
+
+  if (allFreeAudit) {
+    // 全部免审 → 直接签发
+    KEYS.push({
+      id: newKeyId,
+      key_value: 'mck_' + Array.from({length:32}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join(''),
+      name, description: desc,
+      applicant: '张三丰', applicant_uid: 'u001',
+      status: 'active', scope,
+      created_at: now,
+      last_call: null, calls_7d: 0,
+    });
+
+    SCOPE_REQUESTS.push({
+      id: 'req_' + String(SCOPE_REQUESTS.length + 1).padStart(3, '0'),
+      key_id: newKeyId, request_type: 'new', applicant: '张三丰', applicant_uid: 'u001',
+      key_name: name, requested_scope: scope, reason,
+      approval_status: 'approved', approver: '系统（免审）',
+      created_at: now, resolved_at: now,
+    });
+
+    // 显示免审直签成功弹窗
+    document.getElementById('success-modal').querySelector('.modal-header').innerHTML = '✅ 无需审核，创建成功';
+    document.getElementById('success-modal').querySelector('.modal-body').innerHTML =
+      '<p style="color:var(--gray-500);margin-bottom:4px">所有选择的工具权限已被您的生效 KEY 覆盖，<strong>无需审核，已直接创建</strong>。</p>' +
+      '<p style="color:var(--gray-500);font-size:12px">请前往 KEY 详情页查看并复制 KEY Value。</p>';
+  } else {
+    // 需要审批（全部或部分）
+    KEYS.push({
+      id: newKeyId, key_value: '', name, description: desc,
+      applicant: '张三丰', applicant_uid: 'u001',
+      status: 'pending_approval', scope,
+      created_at: now,
+      last_call: null, calls_7d: 0,
+    });
+
+    // 只将需要审批的部分提交审批
+    const auditScope = scope.map(s => ({
+      mcp_id: s.mcp_id,
+      tools: s.tools.filter(t => !approvedTools.has(t))
+    })).filter(s => s.tools.length > 0);
+
+    SCOPE_REQUESTS.push({
+      id: 'req_' + String(SCOPE_REQUESTS.length + 1).padStart(3, '0'),
+      key_id: null, request_type: 'new', applicant: '张三丰', applicant_uid: 'u001',
+      key_name: name,
+      requested_scope: auditScope.length > 0 ? auditScope : scope,
+      reason,
+      approval_status: 'pending',
+      created_at: now,
+    });
+
+    // 显示审批中弹窗
+    const freeInfo = partialFreeAudit
+      ? `<p style="color:var(--success);font-size:12px;margin-bottom:4px">其中 ${freeAuditToolsList.length} 个工具已免审（${freeAuditToolsList.join('、')}）</p>`
+      : '';
+    document.getElementById('success-modal').querySelector('.modal-header').innerHTML = '✅ 申请已提交';
+    document.getElementById('success-modal').querySelector('.modal-body').innerHTML =
+      '<p style="color:var(--gray-500);margin-bottom:4px">您的 KEY 申请已提交，等待管理员审批。</p>' +
+      freeInfo +
+      '<p style="color:var(--gray-500);font-size:12px">审批通过后将通过飞书消息通知您。</p>';
+  }
 
   updatePendingCount();
   document.getElementById('success-modal').classList.add('show');
@@ -1395,7 +1493,8 @@ function openAppendScope() {
 
   const existingTools = [];
   key.scope.forEach(s => s.tools.forEach(t => existingTools.push(t)));
-  renderScopeTree('append-scope-tree', key.scope, true, existingTools);
+  const freeAuditTools = getApprovedToolsForUser('u001');
+  renderScopeTree('append-scope-tree', key.scope, true, existingTools, freeAuditTools);
 
   navigateTo('append-scope');
 }
