@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP KEY 管理后台</title>
+<style>
+  :root {
+    --primary: #3370ff;
+    --primary-light: #e8efff;
+    --primary-dark: #245bdb;
+    --success: #34c759;
+    --success-light: #e8f8ee;
+    --warning: #ff9500;
+    --warning-light: #fff7e6;
+    --danger: #ff3b30;
+    --danger-light: #fff0f0;
+    --gray-50: #f7f8fa;
+    --gray-100: #f0f1f5;
+    --gray-200: #e4e6ed;
+    --gray-300: #c9cdd4;
+    --gray-400: #a0a3ad;
+    --gray-500: #6b6f7a;
+    --gray-600: #4e5260;
+    --gray-700: #2e3240;
+    --gray-800: #1d2129;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --shadow: 0 2px 8px rgba(0,0,0,.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif; background: var(--gray-50); color: var(--gray-800); font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 240px; background: var(--gray-800); color: #fff; padding: 20px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+  .sidebar-logo { padding: 0 20px 24px; font-size: 16px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo .logo-icon { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+  .sidebar-section { padding: 8px 12px; font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; }
+  .sidebar-item { padding: 10px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--gray-300); transition: all .15s; font-size: 14px; border-left: 3px solid transparent; }
+  .sidebar-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .sidebar-item.active { background: rgba(51,112,255,.15); color: #fff; border-left-color: var(--primary); }
+  .sidebar-item .icon { width: 18px; text-align: center; font-size: 15px; }
+  .sidebar-badge { background: var(--danger); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+
+  .main { margin-left: 240px; flex: 1; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-title { font-size: 18px; font-weight: 600; }
+  .topbar-user { display: flex; align-items: center; gap: 10px; }
+  .topbar-avatar { width: 32px; height: 32px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 600; }
+  .content { padding: 24px 32px; max-width: 1200px; }
+
+  /* Components */
+  .card { background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); padding: 20px 24px; margin-bottom: 16px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 600; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-700); cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; white-space: nowrap; }
+  .btn:hover { border-color: var(--gray-300); background: var(--gray-50); }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+  .btn-danger { color: var(--danger); border-color: var(--danger); }
+  .btn-danger:hover { background: var(--danger-light); }
+  .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+  .btn-warning { background: var(--warning); color: #fff; border-color: var(--warning); }
+  .btn-warning:hover { background: #e68600; border-color: #e68600; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-lg { padding: 10px 24px; font-size: 14px; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+  .badge-active { background: var(--success-light); color: #16a34a; }
+  .badge-pending { background: var(--warning-light); color: #d97706; }
+  .badge-revoked { background: var(--gray-100); color: var(--gray-500); }
+  .badge-rejected { background: var(--danger-light); color: var(--danger); }
+
+  .tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--primary-light); color: var(--primary); font-weight: 500; }
+
+  .input-group { margin-bottom: 16px; }
+  .input-group label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-600); margin-bottom: 6px; }
+  .input-group label .required { color: var(--danger); }
+  .input { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 14px; outline: none; transition: border-color .15s; }
+  .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(51,112,255,.1); }
+  textarea.input { resize: vertical; min-height: 80px; }
+
+  .key-value-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font-family: "SF Mono", "Fira Code", monospace; font-size: 13px; }
+  .key-value-box .dots { flex: 1; color: var(--gray-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .key-value-box .revealed { flex: 1; color: var(--gray-800); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; user-select: all; }
+
+  .scope-tree { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; }
+  .scope-server { border-bottom: 1px solid var(--gray-100); }
+  .scope-server:last-child { border-bottom: none; }
+  .scope-server-header { padding: 12px 16px; background: var(--gray-50); font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none; }
+  .scope-server-header .arrow { transition: transform .2s; font-size: 12px; color: var(--gray-400); }
+  .scope-server-header .arrow.open { transform: rotate(90deg); }
+  .scope-server-header .server-badge { margin-left: auto; font-weight: 400; font-size: 12px; color: var(--gray-400); }
+  .scope-tool { padding: 10px 16px 10px 40px; display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--gray-100); font-size: 13px; }
+  .scope-tool .tool-name { font-weight: 500; color: var(--gray-700); }
+  .scope-tool .tool-desc { color: var(--gray-400); font-size: 12px; }
+  .scope-tool input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; }
+
+  .stat-row { display: flex; gap: 16px; margin-bottom: 20px; }
+  .stat-card { flex: 1; background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px 20px; }
+  .stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--gray-800); }
+  .stat-card .stat-label { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 12px; font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
+  td { padding: 12px; border-bottom: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
+  tr:hover td { background: var(--gray-50); }
+
+  .panorama { background: var(--primary-light); border: 1px solid #c5d4f7; border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; }
+  .panorama-title { font-size: 13px; font-weight: 600; color: var(--primary-dark); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .panorama-content { display: flex; flex-wrap: wrap; gap: 8px; }
+  .panorama-item { background: #fff; border: 1px solid #c5d4f7; border-radius: 6px; padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .panorama-item .tool-keys { color: var(--gray-400); font-size: 11px; }
+
+  /* Steps */
+  .steps { display: flex; align-items: center; margin-bottom: 32px; padding: 0 20px; }
+  .step { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--gray-200); color: var(--gray-500); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+  .step.active .step-num { background: var(--primary); color: #fff; }
+  .step.done .step-num { background: var(--success); color: #fff; }
+  .step-label { font-size: 13px; color: var(--gray-500); font-weight: 500; }
+  .step.active .step-label { color: var(--gray-800); }
+  .step.done .step-label { color: var(--success); }
+  .step-line { flex: 1; height: 2px; background: var(--gray-200); margin: 0 12px; }
+  .step.done + .step-line, .step-line.done { background: var(--success); }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+  .modal { background: #fff; border-radius: var(--radius-lg); width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .modal-header { padding: 20px 24px 0; font-size: 16px; font-weight: 600; }
+  .modal-body { padding: 16px 24px; }
+  .modal-footer { padding: 12px 24px 20px; display: flex; justify-content: flex-end; gap: 8px; }
+
+  .empty { text-align: center; padding: 48px 20px; color: var(--gray-400); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  .tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--gray-200); margin-bottom: 20px; }
+  .tab-item { padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--gray-500); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+  .tab-item:hover { color: var(--gray-700); }
+  .tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .toast { position: fixed; top: 24px; right: 24px; background: var(--gray-800); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; z-index: 300; box-shadow: var(--shadow-lg); transform: translateY(-20px); opacity: 0; transition: all .3s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  .log-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .log-row .log-time { color: var(--gray-400); font-size: 12px; font-family: monospace; width: 140px; flex-shrink: 0; }
+  .log-row .log-user { color: var(--gray-600); width: 80px; flex-shrink: 0; }
+  .log-row .log-server { color: var(--gray-500); font-size: 12px; width: 140px; flex-shrink: 0; }
+  .log-row .log-tool { font-weight: 500; flex: 1; }
+  .log-row .log-result { font-size: 12px; }
+  .log-row .log-duration { display: none; }
+
+  .audit-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .audit-search { flex: 1; max-width: 280px; padding: 7px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 13px; outline: none; transition: border-color .15s; }
+  .audit-search:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(51,112,255,.1); }
+  .audit-search::placeholder { color: var(--gray-400); }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--gray-100); }
+  .pagination button { padding: 5px 12px; border: 1px solid var(--gray-200); border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; color: var(--gray-600); }
+  .pagination button:hover { background: var(--gray-50); }
+  .pagination button:disabled { opacity: .4; cursor: not-allowed; }
+  .pagination .page-info { font-size: 12px; color: var(--gray-500); }
+
+  .hidden { display: none !important; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .confirm-input { margin-top: 12px; }
+  .confirm-input .hint { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; }
+
+  /* Alert banner */
+  .alert-banner { padding: 12px 20px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .alert-banner-warning { background: var(--warning-light); border: 1px solid #ffd580; color: #8a5a00; }
+
+  /* Dify config */
+  .dify-config-box { background: var(--gray-800); color: #e0e0e0; border-radius: 8px; padding: 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.7; overflow-x: auto; white-space: pre; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">M</div>
+      <span>MCP KEY 管理</span>
+    </div>
+    <div class="sidebar-section">用户</div>
+    <div class="sidebar-item active" data-page="my-keys">
+      <span class="icon">🔑</span> 我的 KEY
+    </div>
+    <div class="sidebar-item" data-page="new-key">
+      <span class="icon">➕</span> 申请新 KEY
+    </div>
+    <div class="sidebar-section">平台管理</div>
+    <div class="sidebar-item" data-page="admin-approval">
+      <span class="icon">📋</span> 待审批
+      <span class="sidebar-badge" id="pending-count">2</span>
+    </div>
+    <div class="sidebar-item" data-page="admin-keys">
+      <span class="icon">📊</span> 全部 KEY 台账
+    </div>
+    <div class="sidebar-item" data-page="admin-audit">
+      <span class="icon">📝</span> 全局审计日志
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title" id="page-title">我的 KEY</div>
+      <div class="topbar-user">
+        <span style="font-size:13px;color:var(--gray-500)">张三丰</span>
+        <div class="topbar-avatar">张</div>
+      </div>
+    </header>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ==================== Page: My Keys ==================== -->
+    <div class="content page active" id="page-my-keys">
+      <!-- Panorama -->
+      <div class="panorama" id="panorama-section">
+        <div class="panorama-title" onclick="togglePanorama()">
+          <span id="panorama-arrow">▼</span> 权限全景 — 我的所有 KEY 覆盖的工具
+        </div>
+        <div class="panorama-content" id="panorama-content">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-active">2</div>
+          <div class="stat-label">生效中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-pending">1</div>
+          <div class="stat-label">审批中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-revoked">1</div>
+          <div class="stat-label">已撤销</div>
+        </div>
+      </div>
+
+      <!-- Key List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">KEY 列表</div>
+          <button class="btn btn-primary" onclick="navigateTo('new-key')">➕ 申请新 KEY</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>名称</th><th>KEY ID</th><th>状态</th><th>Scope 摘要</th><th>最后调用</th><th>近7天调用量</th><th>创建时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="key-list-body">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== Page: Key Detail ==================== -->
+    <div class="content page" id="page-key-detail">
+      <div style="margin-bottom:16px">
+        <button class="btn btn-sm" onclick="navigateTo('my-keys')">← 返回列表</button>
+      </div>
+
+      <!-- Alert banner (blocked calls warning) -->
+      <div class="alert-banner alert-banner-warning hidden" id="detail-alert-banner">
+        ⚠️ 近期有前置拦截记录，可能存在越权调用尝试
+      </div>
+
+      <!-- Credential -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">凭证信息</div>
+          <span class="badge" id="detail-status"></span>
+        </div>
+        <div class="input-group">
+          <label>KEY 名称</label>
+          <div style="font-size:15px;font-weight:600" id="detail-name"></div>
+        </div>
+        <div class="input-group">
+          <label>KEY ID</label>
+          <div style="font-family:monospace;color:var(--gray-500)" id="detail-id"></div>
+        </div>
+        <div class="input-group">
+          <label>KEY Value</label>
+          <div class="key-value-box">
+            <span class="dots" id="detail-key-dots">••••••••••••••••••••••••••••••••••••</span>
+            <span class="revealed hidden" id="detail-key-value"></span>
+            <button class="btn btn-sm" id="detail-toggle-btn" onclick="toggleKeyValue()">查看</button>
+            <button class="btn btn-sm" onclick="copyKeyValue()">复制</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>用途描述</label>
+          <div style="color:var(--gray-600)" id="detail-desc"></div>
+        </div>
+        <div class="input-group">
+          <label>最后活跃</label>
+          <div style="color:var(--gray-500);font-size:13px" id="detail-last-active"></div>
+        </div>
+      </div>
+
+      <!-- 使用人统计 -->
+      <div class="card" id="detail-users-card">
+        <div class="card-title" style="margin-bottom:16px">使用人统计</div>
+        <div id="detail-users-content"></div>
+      </div>
+
+      <!-- Scope -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">权限范围</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" id="btn-edit-scope" onclick="toggleScopeEditMode()" style="display:none">编辑权限</button>
+            <button class="btn btn-sm btn-primary" id="btn-append-scope" onclick="openAppendScope()">追加权限</button>
+          </div>
+        </div>
+        <div class="scope-tree" id="detail-scope-tree">
+          <!-- filled by JS -->
+        </div>
+        <div id="scope-edit-actions" class="hidden" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-sm" onclick="cancelScopeEdit()">取消</button>
+          <button class="btn btn-sm btn-warning" onclick="confirmScopeReduction()">确认缩减</button>
+        </div>
+      </div>
+
+      <!-- Dify 部署引导 -->
+      <div class="card" id="detail-dify-card">
+        <div class="card-header">
+          <div class="card-title">Dify 部署引导</div>
+        </div>
+        <div style="display:flex;gap:16px">
+          <!-- 推荐方式：插件 -->
+          <div style="flex:1;background:var(--primary-light);border:1px solid #c5d4f7;border-radius:8px;padding:16px">
+            <div style="font-weight:600;font-size:13px;color:var(--primary-dark);margin-bottom:8px">✨ 方式一：MCP 配置插件（推荐）</div>
+            <ol style="font-size:13px;color:var(--gray-600);margin:0;padding-left:18px;line-height:2">
+              <li>进入 Dify 空间 → 找到「MCP 服务配置」插件页面</li>
+              <li>粘贴 KEY Value → 点击「安装」</li>
+              <li>插件自动安装所有已授权的 MCP 服务</li>
+              <li>scope 变更后，点击「🔄 同步更新」即可</li>
+            </ol>
+            <div style="margin-top:10px">
+              <button class="btn btn-sm btn-primary" onclick="copyKeyValue()">复制 KEY Value</button>
+            </div>
+          </div>
+          <!-- 备选方式：手动 -->
+          <div style="flex:1;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:16px">
+            <div style="font-weight:600;font-size:13px;color:var(--gray-600);margin-bottom:8px">📋 方式二：手动配置</div>
+            <ol style="font-size:13px;color:var(--gray-500);margin:0;padding-left:18px;line-height:2">
+              <li>进入 Dify 空间 → 工具 → MCP → 添加 MCP Server</li>
+              <li>按下方列表逐个添加 Server URL</li>
+              <li>每个 Server 的 Header 填入同一个 KEY</li>
+            </ol>
+            <div style="margin-top:10px">
+              <button class="btn btn-sm" onclick="toggleManualConfig()">查看手动配置详情</button>
+            </div>
+          </div>
+        </div>
+        <div id="manual-config-detail" class="hidden" style="margin-top:12px">
+          <div class="dify-config-box" id="detail-dify-config"></div>
+          <div style="margin-top:8px;text-align:right">
+            <button class="btn btn-sm" onclick="copyDifyConfig()">复制 JSON 配置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="card" id="detail-security-card">
+        <div class="card-title" style="margin-bottom:16px">安全管理</div>
+        <div style="display:flex;gap:12px">
+          <button class="btn" onclick="resetKeyValue()">🔄 重置 KEY Value</button>
+          <button class="btn btn-danger" onclick="openRevokeModal()">🗑 撤销 KEY</button>
+        </div>
+        <p style="font-size:12px;color:var(--gray-400);margin-top:10px">重置将生成新 KEY Value，旧值即时失效，<strong>无需审批</strong>。撤销不可恢复。</p>
+      </div>
+
+      <!-- Tabs: Audit & Operations -->
+      <div class="card">
+        <div class="tab-bar">
+          <div class="tab-item active" onclick="switchDetailTab(this,'detail-audit')">审计日志</div>
+          <div class="tab-item" onclick="switchDetailTab(this,'detail-operations')">操作记录</div>
+        </div>
+        <div id="detail-audit">
+          <div class="audit-toolbar">
+            <input type="text" class="audit-search" id="detail-audit-search" placeholder="搜索用户名 / 工具名..." oninput="onDetailAuditSearch()">
+          </div>
+          <div id="detail-audit-content"></div>
+          <div class="pagination" id="detail-audit-pagination"></div>
+        </div>
+        <div id="detail-operations" class="hidden">
+          <div id="detail-operations-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Page: New Key ==================== -->
+    <div class="content page" id="page-new-key">
+      <div class="card">
+        <div class="steps" id="wizard-steps">
+          <div class="step active" data-step="1">
+            <div class="step-num">1</div>
+            <div class="step-label">基本信息</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" data-step="2">
+            <div class="step-num">2</div>
+            <div class="step-label">选择权限</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" data-step="3">
+            <div class="step-num">3</div>
+            <div class="step-label">确认提交</div>
+          </div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="wizard-step-1">
+          <div class="input-group">
+            <label>KEY 名称 <span class="required">*</span></label>
+            <input class="input" id="new-key-name" placeholder="如：HR 考勤项目、IT 运维空间">
+          </div>
+          <div class="input-group">
+            <label>用途描述</label>
+            <textarea class="input" id="new-key-desc" placeholder="简要描述此 KEY 的用途场景"></textarea>
+          </div>
+          <div class="input-group">
+            <label>申请理由 <span class="required">*</span></label>
+            <textarea class="input" id="new-key-reason" placeholder="说明申请此 KEY 的业务需求"></textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:24px">
+            <button class="btn" onclick="navigateTo('my-keys')">取消</button>
+            <button class="btn btn-primary btn-lg" onclick="wizardNext(2)">下一步</button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="wizard-step-2" class="hidden">
+          <div style="display:flex;gap:20px">
+            <div style="flex:2">
+              <div class="scope-tree" id="wizard-scope-tree">
+                <!-- filled by JS -->
+              </div>
+            </div>
+            <div style="flex:1">
+              <div style="background:var(--gray-50);border-radius:8px;padding:16px;position:sticky;top:100px">
+                <div style="font-weight:600;font-size:13px;margin-bottom:12px">已选权限</div>
+                <div id="wizard-selected-summary">
+                  <div style="color:var(--gray-400);font-size:13px">尚未选择任何工具</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:24px">
+            <button class="btn" onclick="wizardBack(1)">上一步</button>
+            <button class="btn btn-primary btn-lg" onclick="wizardNext(3)">下一步</button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="wizard-step-3" class="hidden">
+          <div style="background:var(--gray-50);border-radius:8px;padding:20px;margin-bottom:20px">
+            <h4 style="margin-bottom:12px">申请确认</h4>
+            <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;font-size:13px">
+              <span style="color:var(--gray-500)">KEY 名称</span>
+              <span id="confirm-name" style="font-weight:500"></span>
+              <span style="color:var(--gray-500)">用途描述</span>
+              <span id="confirm-desc"></span>
+              <span style="color:var(--gray-500)">申请理由</span>
+              <span id="confirm-reason"></span>
+              <span style="color:var(--gray-500)">权限范围</span>
+              <span id="confirm-scope"></span>
+            </div>
+          </div>
+          <div id="confirm-scope-detail"></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:24px">
+            <button class="btn" onclick="wizardBack(2)">上一步</button>
+            <button class="btn btn-primary btn-lg" onclick="submitNewKey()">提交申请</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Page: Append Scope ==================== -->
+    <div class="content page" id="page-append-scope">
+      <div style="margin-bottom:16px">
+        <button class="btn btn-sm" onclick="backToDetail()">← 返回详情</button>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">追加权限 — <span id="append-key-name"></span></div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px">灰色勾选项为已有权限（不可取消），新勾选的为本次追加申请。</p>
+        <div class="scope-tree" id="append-scope-tree"></div>
+        <div class="input-group" style="margin-top:16px">
+          <label>追加理由 <span class="required">*</span></label>
+          <textarea class="input" id="append-reason" placeholder="说明追加权限的业务需求"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+          <button class="btn" onclick="backToDetail()">取消</button>
+          <button class="btn btn-primary" onclick="submitAppendScope()">提交追加申请</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Page: Admin Approval ==================== -->
+    <div class="content page" id="page-admin-approval">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">待审批列表</div>
+        <table>
+          <thead>
+            <tr><th>申请人</th><th>KEY 名称</th><th>类型</th><th>请求 Scope</th><th>申请理由</th><th>时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="approval-list-body">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== Page: Admin All Keys ==================== -->
+    <div class="content page" id="page-admin-keys">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">全部 KEY 台账</div>
+          <div style="display:flex;gap:8px">
+            <select class="input" style="width:auto" id="admin-filter-status" onchange="renderAdminKeys()">
+              <option value="">全部状态</option>
+              <option value="active">生效中</option>
+              <option value="pending_approval">审批中</option>
+              <option value="revoked">已撤销</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>名称</th><th>KEY ID</th><th>申请人</th><th>状态</th><th>Scope</th><th>创建时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="admin-keys-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== Page: Admin Audit ==================== -->
+    <div class="content page" id="page-admin-audit">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">全局审计日志</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" class="audit-search" id="global-audit-search" placeholder="搜索用户名 / 工具名..." oninput="renderGlobalAudit()">
+            <select class="input" style="width:auto" id="audit-filter-tool" onchange="renderGlobalAudit()">
+              <option value="">全部工具</option>
+              <option value="query_bitable">query_bitable</option>
+              <option value="create_record">create_record</option>
+              <option value="search_employee">search_employee</option>
+              <option value="get_user_info">get_user_info</option>
+              <option value="list_chat_messages">list_chat_messages</option>
+              <option value="send_message">send_message</option>
+            </select>
+            <select class="input" style="width:auto" id="audit-filter-result" onchange="renderGlobalAudit()">
+              <option value="">全部结果</option>
+              <option value="success">成功</option>
+              <option value="blocked">前置拦截</option>
+              <option value="error">失败</option>
+            </select>
+          </div>
+        </div>
+        <div id="global-audit-content"></div>
+        <div class="pagination" id="global-audit-pagination"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Revoke Modal -->
+<div class="modal-overlay" id="revoke-modal">
+  <div class="modal">
+    <div class="modal-header">⚠️ 确认撤销 KEY</div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px">撤销操作<strong>即时生效且不可恢复</strong>。所有使用此 KEY 的空间将立即失去对应工具的访问权限。</p>
+      <div class="confirm-input">
+        <div class="hint">请输入 KEY 名称「<strong id="revoke-key-name"></strong>」以确认撤销：</div>
+        <input class="input" id="revoke-confirm-input" placeholder="输入 KEY 名称确认">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRevokeModal()">取消</button>
+      <button class="btn btn-danger" onclick="confirmRevoke()">确认撤销</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal">
+    <div class="modal-header">拒绝申请</div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label>拒绝理由 <span class="required">*</span></label>
+        <textarea class="input" id="reject-reason" placeholder="请说明拒绝原因"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRejectModal()">取消</button>
+      <button class="btn btn-danger" onclick="confirmReject()">确认拒绝</button>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal (after new key submit) -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal">
+    <div class="modal-header" style="text-align:center;padding-top:28px">✅ 申请已提交</div>
+    <div class="modal-body" style="text-align:center">
+      <p style="color:var(--gray-500);margin-bottom:4px">您的 KEY 申请已提交，等待管理员审批。</p>
+      <p style="color:var(--gray-500);font-size:12px">审批通过后将通过飞书消息通知您。</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center">
+      <button class="btn btn-primary" onclick="closeSuccessModal()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== Mock Data ====================
+const MCP_SERVERS = [
+  {
+    id: 'feishu-bitable-tat',
+    name: '飞书多维表格（TAT）',
+    url: 'https://mcp.example.com/feishu-bitable-tat/sse',
+    tools: [
+      { id: 'query_bitable', name: 'query_bitable', desc: '查询多维表格数据' },
+      { id: 'create_record', name: 'create_record', desc: '新增多维表格记录' },
+      { id: 'update_record', name: 'update_record', desc: '更新多维表格记录' },
+      { id: 'delete_record', name: 'delete_record', desc: '删除多维表格记录' },
+    ]
+  },
+  {
+    id: 'feishu-contact-shared',
+    name: '飞书通讯录（共享）',
+    url: 'https://mcp.example.com/feishu-contact-shared/sse',
+    tools: [
+      { id: 'search_employee', name: 'search_employee', desc: '搜索员工信息' },
+      { id: 'get_user_info', name: 'get_user_info', desc: '获取用户详情' },
+      { id: 'list_department', name: 'list_department', desc: '获取部门列表' },
+    ]
+  },
+  {
+    id: 'feishu-im-tat',
+    name: '飞书消息（TAT）',
+    url: 'https://mcp.example.com/feishu-im-tat/sse',
+    tools: [
+      { id: 'list_chat_messages', name: 'list_chat_messages', desc: '获取群聊消息列表' },
+      { id: 'send_message', name: 'send_message', desc: '发送消息' },
+      { id: 'get_chat_info', name: 'get_chat_info', desc: '获取群信息' },
+    ]
+  },
+  {
+    id: 'feishu-attendance-tat',
+    name: '飞书考勤（TAT）',
+    url: 'https://mcp.example.com/feishu-attendance-tat/sse',
+    tools: [
+      { id: 'query_attendance', name: 'query_attendance', desc: '查询考勤记录' },
+      { id: 'get_shift_info', name: 'get_shift_info', desc: '获取班次信息' },
+    ]
+  }
+];
+
+// Helper: resolve MCP server name from tool id
+function resolveServerNameForTool(toolId) {
+  for (const server of MCP_SERVERS) {
+    if (server.tools.some(t => t.id === toolId)) return server.name;
+  }
+  return '-';
+}
+
+let KEYS = [
+  {
+    id: 'key_001',
+    key_value: 'mck_a8f2e9b1c4d7f0e3a5b8c1d4e7f0a3b6',
+    name: 'HR 考勤项目',
+    description: '用于 HR 部门在 Dify 中搭建考勤查询和通讯录工作流',
+    applicant: '张三丰',
+    applicant_uid: 'u001',
+    status: 'active',
+    scope: [
+      { mcp_id: 'feishu-bitable-tat', tools: ['query_bitable', 'create_record'] },
+      { mcp_id: 'feishu-contact-shared', tools: ['search_employee', 'get_user_info'] },
+      { mcp_id: 'feishu-attendance-tat', tools: ['query_attendance', 'get_shift_info'] },
+    ],
+    created_at: '2026-03-15 10:23',
+    last_call: '2026-04-01 16:32',
+    calls_7d: 156,
+  },
+  {
+    id: 'key_002',
+    key_value: 'mck_b7c1d4e8f2a9b0c3e5d7f1a4b6c8e0d2',
+    name: 'IT 运维群消息监控',
+    description: '用于监控 IT 运维群的消息和自动回复',
+    applicant: '张三丰',
+    applicant_uid: 'u001',
+    status: 'active',
+    scope: [
+      { mcp_id: 'feishu-im-tat', tools: ['list_chat_messages', 'send_message', 'get_chat_info'] },
+    ],
+    created_at: '2026-03-20 14:05',
+    last_call: '2026-04-01 15:30',
+    calls_7d: 89,
+  },
+  {
+    id: 'key_003',
+    key_value: '',
+    name: '财务报表自动化',
+    description: '用于财务团队自动生成和查询报表',
+    applicant: '张三丰',
+    applicant_uid: 'u001',
+    status: 'pending_approval',
+    scope: [
+      { mcp_id: 'feishu-bitable-tat', tools: ['query_bitable', 'create_record', 'update_record'] },
+    ],
+    created_at: '2026-04-01 09:30',
+    last_call: null,
+    calls_7d: 0,
+  },
+  {
+    id: 'key_004',
+    key_value: 'mck_c9d2e5f8a1b3c6d9e2f5a8b1c4d7f0a3',
+    name: '旧项目测试（已废弃）',
+    description: '测试用途，已不再需要',
+    applicant: '张三丰',
+    applicant_uid: 'u001',
+    status: 'revoked',
+    scope: [
+      { mcp_id: 'feishu-contact-shared', tools: ['search_employee'] },
+    ],
+    created_at: '2026-02-10 16:45',
+    revoked_at: '2026-03-28 11:20',
+    last_call: '2026-03-27 09:15',
+    calls_7d: 0,
+  },
+  {
+    id: 'key_005',
+    key_value: 'mck_d1e4f7a0b3c6d9e2f5a8b1c4d7f0a3b6',
+    name: '销售 CRM 集成',
+    description: '销售团队通讯录和消息集成',
+    applicant: '李四光',
+    applicant_uid: 'u002',
+    status: 'active',
+    scope: [
+      { mcp_id: 'feishu-contact-shared', tools: ['search_employee', 'get_user_info', 'list_department'] },
+      { mcp_id: 'feishu-im-tat', tools: ['send_message'] },
+    ],
+    created_at: '2026-03-18 11:20',
+    last_call: '2026-04-01 15:58',
+    calls_7d: 67,
+  },
+];
+
+let SCOPE_REQUESTS = [
+  {
+    id: 'req_001', key_id: null, request_type: 'new', applicant: '张三丰', applicant_uid: 'u001',
+    key_name: '财务报表自动化',
+    requested_scope: [{ mcp_id: 'feishu-bitable-tat', tools: ['query_bitable', 'create_record', 'update_record'] }],
+    reason: '财务团队需要通过 Dify 工作流自动查询和生成多维表格报表',
+    approval_status: 'pending', created_at: '2026-04-01 09:30',
+  },
+  {
+    id: 'req_002', key_id: 'key_005', request_type: 'append', applicant: '李四光', applicant_uid: 'u002',
+    key_name: '销售 CRM 集成',
+    requested_scope: [{ mcp_id: 'feishu-im-tat', tools: ['list_chat_messages'] }],
+    reason: '销售团队需要读取客户群的历史消息用于 CRM 分析',
+    approval_status: 'pending', created_at: '2026-04-01 15:10',
+  },
+  {
+    id: 'req_003', key_id: 'key_001', request_type: 'new', applicant: '张三丰', applicant_uid: 'u001',
+    key_name: 'HR 考勤项目',
+    requested_scope: [
+      { mcp_id: 'feishu-bitable-tat', tools: ['query_bitable', 'create_record'] },
+      { mcp_id: 'feishu-contact-shared', tools: ['search_employee', 'get_user_info'] },
+      { mcp_id: 'feishu-attendance-tat', tools: ['query_attendance', 'get_shift_info'] },
+    ],
+    reason: 'HR 部门需要在 Dify 中搭建考勤查询工作流',
+    approval_status: 'approved', approver: '管理员王', created_at: '2026-03-14 17:00', resolved_at: '2026-03-15 10:00',
+  },
+];
+
+const AUDIT_LOGS = [
+  { time: '2026-04-01 16:32:15', user: '张三丰', key_id: 'key_001', tool: 'query_bitable', mcp_server: '飞书多维表格（TAT）', result: 'success', duration: '230ms' },
+  { time: '2026-04-01 16:31:08', user: '王小明', key_id: 'key_001', tool: 'search_employee', mcp_server: '飞书通讯录（共享）', result: 'success', duration: '156ms' },
+  { time: '2026-04-01 16:28:42', user: '张三丰', key_id: 'key_002', tool: 'list_chat_messages', mcp_server: '飞书消息（TAT）', result: 'blocked', duration: '89ms' },
+  { time: '2026-04-01 16:25:11', user: '张三丰', key_id: 'key_001', tool: 'query_attendance', mcp_server: '飞书考勤（TAT）', result: 'success', duration: '312ms' },
+  { time: '2026-04-01 15:58:03', user: '李四光', key_id: 'key_005', tool: 'send_message', mcp_server: '飞书消息（TAT）', result: 'success', duration: '198ms' },
+  { time: '2026-04-01 15:42:29', user: '王小明', key_id: 'key_001', tool: 'create_record', mcp_server: '飞书多维表格（TAT）', result: 'success', duration: '445ms' },
+  { time: '2026-04-01 15:30:17', user: '张三丰', key_id: 'key_002', tool: 'send_message', mcp_server: '飞书消息（TAT）', result: 'success', duration: '210ms' },
+  { time: '2026-04-01 14:55:44', user: '李四光', key_id: 'key_005', tool: 'get_user_info', mcp_server: '飞书通讯录（共享）', result: 'success', duration: '167ms' },
+  { time: '2026-04-01 14:22:08', user: '张三丰', key_id: 'key_001', tool: 'get_user_info', mcp_server: '飞书通讯录（共享）', result: 'error', duration: '2103ms' },
+  { time: '2026-04-01 13:15:33', user: '王小明', key_id: 'key_001', tool: 'query_bitable', mcp_server: '飞书多维表格（TAT）', result: 'success', duration: '278ms' },
+];
+
+const KEY_USERS = {
+  'key_001': [
+    { user: '张三丰', last: '2026-04-01 16:32', count: 45 },
+    { user: '王小明', last: '2026-04-01 16:31', count: 23 },
+    { user: '李小花', last: '2026-03-31 10:15', count: 8 },
+  ],
+  'key_002': [
+    { user: '张三丰', last: '2026-04-01 15:30', count: 89 },
+  ],
+  'key_005': [
+    { user: '李四光', last: '2026-04-01 15:58', count: 52 },
+    { user: '赵六', last: '2026-04-01 11:20', count: 15 },
+  ],
+};
+
+let OPERATION_LOGS = [
+  { time: '2026-03-25 14:30', key_id: 'key_001', type: '重置', detail: 'KEY Value 已重置', operator: '张三丰' },
+  { time: '2026-03-20 10:00', key_id: 'key_001', type: '缩减scope', detail: '移除工具: delete_record (feishu-bitable-tat)', operator: '张三丰' },
+];
+
+// ==================== State ====================
+let currentKeyId = null;
+let currentPage = 'my-keys';
+let keyRevealed = false;
+let rejectingRequestId = null;
+let wizardSelectedScope = {};
+let scopeEditMode = false;
+
+// ==================== Navigation ====================
+function navigateTo(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+
+  const sidebarItem = document.querySelector(`.sidebar-item[data-page="${page}"]`);
+  if (sidebarItem) sidebarItem.classList.add('active');
+
+  const titles = {
+    'my-keys': '我的 KEY',
+    'key-detail': 'KEY 详情',
+    'new-key': '申请新 KEY',
+    'append-scope': '追加权限',
+    'admin-approval': '待审批',
+    'admin-keys': '全部 KEY 台账',
+    'admin-audit': '全局审计日志',
+  };
+  document.getElementById('page-title').textContent = titles[page] || '';
+
+  if (page === 'my-keys') renderMyKeys();
+  if (page === 'new-key') initWizard();
+  if (page === 'admin-approval') renderApprovalList();
+  if (page === 'admin-keys') renderAdminKeys();
+  if (page === 'admin-audit') renderGlobalAudit();
+}
+
+document.querySelectorAll('.sidebar-item').forEach(item => {
+  item.addEventListener('click', () => navigateTo(item.dataset.page));
+});
+
+// ==================== My Keys Page ====================
+function renderMyKeys() {
+  const myKeys = KEYS.filter(k => k.applicant_uid === 'u001');
+
+  // Stats
+  document.getElementById('stat-active').textContent = myKeys.filter(k => k.status === 'active').length;
+  document.getElementById('stat-pending').textContent = myKeys.filter(k => k.status === 'pending_approval').length;
+  document.getElementById('stat-revoked').textContent = myKeys.filter(k => k.status === 'revoked').length;
+
+  // Panorama
+  renderPanorama(myKeys.filter(k => k.status === 'active'));
+
+  // Table
+  const tbody = document.getElementById('key-list-body');
+  tbody.innerHTML = myKeys.map(k => {
+    const scopeSummary = getScopeSummary(k.scope);
+    const statusBadge = getStatusBadge(k.status);
+    const lastCall = k.last_call || '<span style="color:var(--gray-400)">-</span>';
+    const calls7d = k.calls_7d || 0;
+    return `<tr>
+      <td><strong>${k.name}</strong></td>
+      <td style="font-family:monospace;font-size:12px;color:var(--gray-400)">${k.id}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${scopeSummary}</td>
+      <td style="font-size:12px;color:var(--gray-400)">${lastCall}</td>
+      <td style="font-size:12px;font-weight:500">${calls7d}</td>
+      <td style="font-size:12px;color:var(--gray-400)">${k.created_at}</td>
+      <td><button class="btn btn-sm" onclick="openKeyDetail('${k.id}')">详情</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPanorama(activeKeys) {
+  const toolMap = {};
+  activeKeys.forEach(k => {
+    k.scope.forEach(s => {
+      s.tools.forEach(t => {
+        if (!toolMap[t]) toolMap[t] = [];
+        toolMap[t].push(k.name);
+      });
+    });
+  });
+
+  const container = document.getElementById('panorama-content');
+  container.innerHTML = Object.entries(toolMap).map(([tool, keys]) => {
+    return `<div class="panorama-item">
+      <strong>${tool}</strong>
+      <span class="tool-keys">← ${keys.join(', ')}</span>
+    </div>`;
+  }).join('');
+}
+
+let panoramaOpen = true;
+function togglePanorama() {
+  panoramaOpen = !panoramaOpen;
+  document.getElementById('panorama-content').style.display = panoramaOpen ? 'flex' : 'none';
+  document.getElementById('panorama-arrow').textContent = panoramaOpen ? '▼' : '▶';
+}
+
+// ==================== Key Detail Page ====================
+function openKeyDetail(keyId) {
+  currentKeyId = keyId;
+  keyRevealed = false;
+  scopeEditMode = false;
+  const key = KEYS.find(k => k.id === keyId);
+  if (!key) return;
+
+  // Alert banner: check for blocked logs
+  const hasBlocked = AUDIT_LOGS.some(l => l.key_id === keyId && l.result === 'blocked');
+  document.getElementById('detail-alert-banner').classList.toggle('hidden', !hasBlocked);
+
+  document.getElementById('detail-name').textContent = key.name;
+  document.getElementById('detail-id').textContent = key.id;
+  document.getElementById('detail-key-value').textContent = key.key_value || '（审批通过后生成）';
+  document.getElementById('detail-desc').textContent = key.description;
+  document.getElementById('detail-last-active').textContent = key.last_call || '暂无调用记录';
+
+  const statusEl = document.getElementById('detail-status');
+  statusEl.className = 'badge badge-' + (key.status === 'active' ? 'active' : key.status === 'pending_approval' ? 'pending' : 'revoked');
+  statusEl.textContent = key.status === 'active' ? '生效中' : key.status === 'pending_approval' ? '审批中' : '已撤销';
+
+  document.getElementById('detail-key-dots').classList.remove('hidden');
+  document.getElementById('detail-key-value').classList.add('hidden');
+  document.getElementById('detail-toggle-btn').textContent = '查看';
+
+  // Hide controls for non-active keys
+  const isActive = key.status === 'active';
+  document.getElementById('btn-append-scope').style.display = isActive ? '' : 'none';
+  document.getElementById('btn-edit-scope').style.display = isActive ? '' : 'none';
+  document.getElementById('detail-security-card').style.display = isActive ? '' : 'none';
+  document.getElementById('detail-dify-card').style.display = isActive ? '' : 'none';
+  document.getElementById('scope-edit-actions').classList.add('hidden');
+
+  // Scope tree
+  renderScopeTree('detail-scope-tree', key.scope, false, []);
+
+  // Users card
+  renderDetailUsers(keyId);
+
+  // Dify config
+  renderDifyConfig(key);
+
+  // Audit logs
+  renderDetailAudit(keyId);
+  renderDetailOperations(keyId);
+
+  navigateTo('key-detail');
+}
+
+function toggleKeyValue() {
+  keyRevealed = !keyRevealed;
+  document.getElementById('detail-key-dots').classList.toggle('hidden', keyRevealed);
+  document.getElementById('detail-key-value').classList.toggle('hidden', !keyRevealed);
+  document.getElementById('detail-toggle-btn').textContent = keyRevealed ? '隐藏' : '查看';
+}
+
+function copyKeyValue() {
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (key && key.key_value) {
+    navigator.clipboard.writeText(key.key_value).then(() => showToast('KEY Value 已复制到剪贴板'));
+  }
+}
+
+function renderDetailUsers(keyId) {
+  const users = KEY_USERS[keyId];
+  const container = document.getElementById('detail-users-content');
+  const card = document.getElementById('detail-users-card');
+  if (!users || users.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  container.innerHTML = `<table><thead><tr><th>用户</th><th>最后调用时间</th><th>累计调用次数</th></tr></thead><tbody>` +
+    users.map(u => `<tr><td><strong>${u.user}</strong></td><td style="font-size:12px;color:var(--gray-400)">${u.last}</td><td style="font-weight:500">${u.count}</td></tr>`).join('') +
+    `</tbody></table>`;
+}
+
+function renderDifyConfig(key) {
+  const serverIds = [...new Set(key.scope.map(s => s.mcp_id))];
+  const servers = serverIds.map(id => MCP_SERVERS.find(m => m.id === id)).filter(Boolean);
+  const config = {
+    mcpServers: {}
+  };
+  servers.forEach(server => {
+    config.mcpServers[server.id] = {
+      url: server.url,
+      headers: {
+        "Authorization": "Bearer <YOUR_MCP_KEY_VALUE>"
+      }
+    };
+  });
+  document.getElementById('detail-dify-config').textContent = JSON.stringify(config, null, 2);
+}
+
+function copyDifyConfig() {
+  const text = document.getElementById('detail-dify-config').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Dify 配置已复制到剪贴板'));
+}
+
+function copyKeyValue() {
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (key) {
+    navigator.clipboard.writeText(key.key_value).then(() => showToast('KEY Value 已复制，可粘贴到 Dify 插件'));
+  }
+}
+
+let detailAuditPage = 1;
+const AUDIT_PAGE_SIZE = 20;
+
+function onDetailAuditSearch() {
+  detailAuditPage = 1;
+  renderDetailAudit(currentKeyId);
+}
+
+function renderDetailAudit(keyId) {
+  let logs = AUDIT_LOGS.filter(l => l.key_id === keyId);
+  const searchVal = document.getElementById('detail-audit-search')?.value?.trim().toLowerCase() || '';
+  if (searchVal) {
+    logs = logs.filter(l => l.user.toLowerCase().includes(searchVal) || l.tool.toLowerCase().includes(searchVal));
+  }
+  const container = document.getElementById('detail-audit-content');
+  if (logs.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📝</div>' + (searchVal ? '无匹配结果' : '暂无调用记录') + '</div>';
+    document.getElementById('detail-audit-pagination').innerHTML = '';
+    return;
+  }
+  const totalPages = Math.ceil(logs.length / AUDIT_PAGE_SIZE);
+  if (detailAuditPage > totalPages) detailAuditPage = totalPages;
+  const start = (detailAuditPage - 1) * AUDIT_PAGE_SIZE;
+  const pageLogs = logs.slice(start, start + AUDIT_PAGE_SIZE);
+  container.innerHTML = pageLogs.map(l => renderLogRow(l)).join('');
+  renderPagination('detail-audit-pagination', detailAuditPage, totalPages, logs.length, 'paginateDetailAudit');
+}
+
+function renderDetailOperations(keyId) {
+  const key = KEYS.find(k => k.id === keyId);
+  // Combine scope requests (for this key) and operation logs
+  const requests = SCOPE_REQUESTS.filter(r => r.key_id === keyId || (r.key_name === key?.name && r.request_type === 'new'));
+  const opLogs = OPERATION_LOGS.filter(o => o.key_id === keyId);
+
+  const container = document.getElementById('detail-operations-content');
+
+  // Build unified list
+  const entries = [];
+
+  requests.forEach(r => {
+    const typeBadge = r.request_type === 'new' ? '<span class="tag">新申请</span>' : '<span class="tag" style="background:#fff7e6;color:#d97706">追加</span>';
+    const statusBadge = r.approval_status === 'approved' ? '<span class="badge badge-active">已通过</span>' :
+      r.approval_status === 'rejected' ? '<span class="badge badge-rejected">已拒绝</span>' :
+      '<span class="badge badge-pending">审批中</span>';
+    const scopeText = r.requested_scope.map(s => `${s.tools.length}个工具`).join(', ');
+    entries.push({
+      time: r.created_at,
+      html: `<tr><td style="font-size:12px">${r.created_at}</td><td>${typeBadge}</td><td style="font-size:12px">${scopeText}</td><td>${statusBadge}</td><td style="font-size:12px">${r.approver || r.applicant || '-'}</td></tr>`
+    });
+  });
+
+  opLogs.forEach(o => {
+    const typeMap = {
+      '重置': '<span class="tag" style="background:var(--danger-light);color:var(--danger)">重置</span>',
+      '缩减scope': '<span class="tag" style="background:#fff0f0;color:#d97706">缩减scope</span>',
+    };
+    const typeBadge = typeMap[o.type] || `<span class="tag">${o.type}</span>`;
+    entries.push({
+      time: o.time,
+      html: `<tr><td style="font-size:12px">${o.time}</td><td>${typeBadge}</td><td style="font-size:12px">${o.detail}</td><td><span class="badge badge-active">已完成</span></td><td style="font-size:12px">${o.operator}</td></tr>`
+    });
+  });
+
+  // Sort by time descending
+  entries.sort((a, b) => b.time.localeCompare(a.time));
+
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>暂无操作记录</div>';
+    return;
+  }
+
+  container.innerHTML = `<table><thead><tr><th>时间</th><th>类型</th><th>详情</th><th>状态</th><th>操作人</th></tr></thead><tbody>` +
+    entries.map(e => e.html).join('') + `</tbody></table>`;
+}
+
+function switchDetailTab(el, tabId) {
+  el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('detail-audit').classList.toggle('hidden', tabId !== 'detail-audit');
+  document.getElementById('detail-operations').classList.toggle('hidden', tabId !== 'detail-operations');
+}
+
+// ==================== Scope Edit (Reduction) ====================
+function toggleScopeEditMode() {
+  scopeEditMode = !scopeEditMode;
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (!key) return;
+
+  if (scopeEditMode) {
+    document.getElementById('btn-edit-scope').textContent = '取消编辑';
+    document.getElementById('scope-edit-actions').classList.remove('hidden');
+    document.getElementById('scope-edit-actions').style.display = 'flex';
+    // Re-render scope tree with checkboxes for reduction
+    renderScopeTreeForReduction('detail-scope-tree', key.scope);
+  } else {
+    cancelScopeEdit();
+  }
+}
+
+function cancelScopeEdit() {
+  scopeEditMode = false;
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (!key) return;
+  document.getElementById('btn-edit-scope').textContent = '编辑权限';
+  document.getElementById('scope-edit-actions').classList.add('hidden');
+  renderScopeTree('detail-scope-tree', key.scope, false, []);
+}
+
+function renderScopeTreeForReduction(containerId, scope) {
+  const container = document.getElementById(containerId);
+  const scopeMap = {};
+  scope.forEach(s => { scopeMap[s.mcp_id] = s.tools; });
+
+  container.innerHTML = MCP_SERVERS.map(server => {
+    const activeTools = scopeMap[server.id] || [];
+    if (activeTools.length === 0) return '';
+
+    const toolsHtml = server.tools.map(tool => {
+      const isActive = activeTools.includes(tool.id);
+      if (!isActive) return '';
+      return `<div class="scope-tool">
+        <input type="checkbox" checked data-server="${server.id}" data-tool="${tool.id}" id="reduce-${server.id}-${tool.id}">
+        <span class="tool-name">${tool.name}</span>
+        <span class="tool-desc">${tool.desc}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="scope-server">
+      <div class="scope-server-header" onclick="toggleServer(this)">
+        <span class="arrow open">▶</span>
+        ${server.name}
+        <span class="server-badge">${activeTools.length}个工具</span>
+      </div>
+      <div class="scope-server-tools">${toolsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function confirmScopeReduction() {
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (!key) return;
+
+  // Gather currently checked tools
+  const checkedTools = {};
+  document.querySelectorAll('#detail-scope-tree input[type="checkbox"]').forEach(cb => {
+    if (cb.checked) {
+      const srv = cb.dataset.server;
+      const tool = cb.dataset.tool;
+      if (!checkedTools[srv]) checkedTools[srv] = [];
+      checkedTools[srv].push(tool);
+    }
+  });
+
+  // Find what was removed
+  const removed = [];
+  key.scope.forEach(s => {
+    const kept = checkedTools[s.mcp_id] || [];
+    s.tools.forEach(t => {
+      if (!kept.includes(t)) {
+        removed.push(`${t} (${s.mcp_id})`);
+      }
+    });
+  });
+
+  if (removed.length === 0) {
+    showToast('未检测到权限变更');
+    cancelScopeEdit();
+    return;
+  }
+
+  if (!confirm(`确定要移除以下工具权限吗？\n${removed.join('\n')}\n\n此操作即时生效，无需审批。`)) return;
+
+  // Apply reduction
+  key.scope = key.scope.map(s => {
+    const kept = checkedTools[s.mcp_id] || [];
+    return { mcp_id: s.mcp_id, tools: s.tools.filter(t => kept.includes(t)) };
+  }).filter(s => s.tools.length > 0);
+
+  // Record operation
+  const now = new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-');
+  OPERATION_LOGS.push({
+    time: now,
+    key_id: currentKeyId,
+    type: '缩减scope',
+    detail: '移除工具: ' + removed.join(', '),
+    operator: '张三丰',
+  });
+
+  showToast('权限已缩减，即时生效');
+  openKeyDetail(currentKeyId);
+}
+
+// ==================== Scope Tree Renderer ====================
+function renderScopeTree(containerId, scope, selectable, disabledTools) {
+  const container = document.getElementById(containerId);
+  const scopeMap = {};
+  scope.forEach(s => { scopeMap[s.mcp_id] = s.tools; });
+
+  container.innerHTML = MCP_SERVERS.map(server => {
+    const activeTools = scopeMap[server.id] || [];
+    const hasAny = selectable || activeTools.length > 0;
+    if (!selectable && activeTools.length === 0) return '';
+
+    const toolsHtml = server.tools.map(tool => {
+      const isActive = activeTools.includes(tool.id);
+      const isDisabled = disabledTools.includes(tool.id);
+      const checkboxHtml = selectable
+        ? `<input type="checkbox" ${isActive || isDisabled ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
+            data-server="${server.id}" data-tool="${tool.id}"
+            onchange="onScopeCheckChange(this, '${containerId}')">`
+        : (isActive ? '<span style="color:var(--success)">✓</span>' : '');
+      const pendingReq = SCOPE_REQUESTS.find(r => r.approval_status === 'pending' && r.key_id === currentKeyId &&
+        r.requested_scope.some(s => s.mcp_id === server.id && s.tools.includes(tool.id)));
+      const pendingBadge = pendingReq ? ' <span class="badge badge-pending" style="font-size:10px">审批中</span>' : '';
+      return `<div class="scope-tool">${checkboxHtml}<span class="tool-name">${tool.name}</span><span class="tool-desc">${tool.desc}</span>${pendingBadge}</div>`;
+    }).join('');
+
+    return `<div class="scope-server">
+      <div class="scope-server-header" onclick="toggleServer(this)">
+        <span class="arrow open">▶</span>
+        ${server.name}
+        <span class="server-badge">${selectable ? server.tools.length + '个工具' : activeTools.length + '/' + server.tools.length}</span>
+      </div>
+      <div class="scope-server-tools">${toolsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleServer(el) {
+  const tools = el.nextElementSibling;
+  const arrow = el.querySelector('.arrow');
+  const isOpen = tools.style.display !== 'none';
+  tools.style.display = isOpen ? 'none' : '';
+  arrow.classList.toggle('open', !isOpen);
+}
+
+function onScopeCheckChange(cb, containerId) {
+  if (containerId === 'wizard-scope-tree') updateWizardSummary();
+}
+
+function getSelectedScope(containerId) {
+  const scope = {};
+  document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked:not(:disabled)`).forEach(cb => {
+    const server = cb.dataset.server;
+    const tool = cb.dataset.tool;
+    if (!scope[server]) scope[server] = [];
+    scope[server].push(tool);
+  });
+  return Object.entries(scope).map(([mcp_id, tools]) => ({ mcp_id, tools }));
+}
+
+// ==================== Wizard (New Key) ====================
+let wizardStep = 1;
+
+function initWizard() {
+  wizardStep = 1;
+  updateWizardUI();
+  document.getElementById('new-key-name').value = '';
+  document.getElementById('new-key-desc').value = '';
+  document.getElementById('new-key-reason').value = '';
+  renderScopeTree('wizard-scope-tree', [], true, []);
+  updateWizardSummary();
+}
+
+function wizardNext(step) {
+  if (step === 2 && !document.getElementById('new-key-name').value.trim()) {
+    showToast('请填写 KEY 名称'); return;
+  }
+  if (step === 2 && !document.getElementById('new-key-reason').value.trim()) {
+    showToast('请填写申请理由'); return;
+  }
+  if (step === 3) {
+    const scope = getSelectedScope('wizard-scope-tree');
+    if (scope.length === 0) { showToast('请至少选择一个工具'); return; }
+    // Fill confirm
+    document.getElementById('confirm-name').textContent = document.getElementById('new-key-name').value;
+    document.getElementById('confirm-desc').textContent = document.getElementById('new-key-desc').value || '（无）';
+    document.getElementById('confirm-reason').textContent = document.getElementById('new-key-reason').value;
+    document.getElementById('confirm-scope').textContent = getScopeSummaryFromScope(scope);
+    document.getElementById('confirm-scope-detail').innerHTML = '';
+    renderScopeTree('confirm-scope-detail', scope, false, []);
+  }
+  wizardStep = step;
+  updateWizardUI();
+}
+
+function wizardBack(step) {
+  wizardStep = step;
+  updateWizardUI();
+}
+
+function updateWizardUI() {
+  [1,2,3].forEach(s => {
+    document.getElementById(`wizard-step-${s}`).classList.toggle('hidden', s !== wizardStep);
+    const stepEl = document.querySelector(`.step[data-step="${s}"]`);
+    stepEl.classList.remove('active', 'done');
+    if (s < wizardStep) stepEl.classList.add('done');
+    if (s === wizardStep) stepEl.classList.add('active');
+  });
+  document.querySelectorAll('.step-line').forEach((line, i) => {
+    line.classList.toggle('done', i + 1 < wizardStep);
+  });
+}
+
+function updateWizardSummary() {
+  const scope = getSelectedScope('wizard-scope-tree');
+  const container = document.getElementById('wizard-selected-summary');
+  if (scope.length === 0) {
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px">尚未选择任何工具</div>';
+    return;
+  }
+  container.innerHTML = scope.map(s => {
+    const server = MCP_SERVERS.find(m => m.id === s.mcp_id);
+    return `<div style="margin-bottom:8px">
+      <div style="font-size:12px;color:var(--gray-500)">${server?.name || s.mcp_id}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${s.tools.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function submitNewKey() {
+  const name = document.getElementById('new-key-name').value.trim();
+  const desc = document.getElementById('new-key-desc').value.trim();
+  const reason = document.getElementById('new-key-reason').value.trim();
+  const scope = getSelectedScope('wizard-scope-tree');
+
+  const newKeyId = 'key_' + String(KEYS.length + 1).padStart(3, '0');
+  KEYS.push({
+    id: newKeyId, key_value: '', name, description: desc,
+    applicant: '张三丰', applicant_uid: 'u001',
+    status: 'pending_approval', scope,
+    created_at: new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-'),
+    last_call: null,
+    calls_7d: 0,
+  });
+
+  SCOPE_REQUESTS.push({
+    id: 'req_' + String(SCOPE_REQUESTS.length + 1).padStart(3, '0'),
+    key_id: null, request_type: 'new', applicant: '张三丰', applicant_uid: 'u001',
+    key_name: name, requested_scope: scope, reason,
+    approval_status: 'pending',
+    created_at: new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-'),
+  });
+
+  updatePendingCount();
+  document.getElementById('success-modal').classList.add('show');
+}
+
+function closeSuccessModal() {
+  document.getElementById('success-modal').classList.remove('show');
+  navigateTo('my-keys');
+}
+
+// ==================== Append Scope ====================
+function openAppendScope() {
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (!key) return;
+  document.getElementById('append-key-name').textContent = key.name;
+  document.getElementById('append-reason').value = '';
+
+  const existingTools = [];
+  key.scope.forEach(s => s.tools.forEach(t => existingTools.push(t)));
+  renderScopeTree('append-scope-tree', key.scope, true, existingTools);
+
+  navigateTo('append-scope');
+}
+
+function backToDetail() {
+  openKeyDetail(currentKeyId);
+}
+
+function submitAppendScope() {
+  const reason = document.getElementById('append-reason').value.trim();
+  if (!reason) { showToast('请填写追加理由'); return; }
+
+  const newScope = getSelectedScope('append-scope-tree');
+  if (newScope.length === 0) { showToast('请选择要追加的工具'); return; }
+
+  const key = KEYS.find(k => k.id === currentKeyId);
+  SCOPE_REQUESTS.push({
+    id: 'req_' + String(SCOPE_REQUESTS.length + 1).padStart(3, '0'),
+    key_id: currentKeyId, request_type: 'append', applicant: '张三丰', applicant_uid: 'u001',
+    key_name: key.name, requested_scope: newScope, reason,
+    approval_status: 'pending',
+    created_at: new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-'),
+  });
+
+  updatePendingCount();
+  showToast('追加申请已提交，等待管理员审批');
+  openKeyDetail(currentKeyId);
+}
+
+// ==================== Security ====================
+function resetKeyValue() {
+  if (!confirm('确定要重置 KEY Value 吗？旧值将即时失效，使用此 KEY 的所有空间需要更新配置。')) return;
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (key) {
+    key.key_value = 'mck_' + Array.from({length:32}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+
+    // Record the reset in operation logs
+    const now = new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-');
+    OPERATION_LOGS.push({
+      time: now,
+      key_id: currentKeyId,
+      type: '重置',
+      detail: 'KEY Value 已重置',
+      operator: '张三丰',
+    });
+
+    showToast('KEY Value 已重置');
+    openKeyDetail(currentKeyId);
+  }
+}
+
+function openRevokeModal() {
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (!key) return;
+  document.getElementById('revoke-key-name').textContent = key.name;
+  document.getElementById('revoke-confirm-input').value = '';
+  document.getElementById('revoke-modal').classList.add('show');
+}
+
+function closeRevokeModal() {
+  document.getElementById('revoke-modal').classList.remove('show');
+}
+
+function confirmRevoke() {
+  const key = KEYS.find(k => k.id === currentKeyId);
+  if (!key) return;
+  if (document.getElementById('revoke-confirm-input').value !== key.name) {
+    showToast('KEY 名称不匹配，请重新输入');
+    return;
+  }
+  key.status = 'revoked';
+  key.revoked_at = new Date().toLocaleString('zh-CN').replace(/\//g, '-');
+  closeRevokeModal();
+  showToast('KEY 已撤销');
+  openKeyDetail(currentKeyId);
+}
+
+// ==================== Admin: Approval ====================
+function renderApprovalList() {
+  const pending = SCOPE_REQUESTS.filter(r => r.approval_status === 'pending');
+  const tbody = document.getElementById('approval-list-body');
+  if (pending.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:40px">暂无待审批的申请</td></tr>';
+    return;
+  }
+  tbody.innerHTML = pending.map(r => {
+    const typeBadge = r.request_type === 'new' ? '<span class="tag">新申请</span>' : '<span class="tag" style="background:#fff7e6;color:#d97706">追加</span>';
+    const scopeText = r.requested_scope.map(s => {
+      const server = MCP_SERVERS.find(m => m.id === s.mcp_id);
+      return `${server?.name || s.mcp_id}: ${s.tools.join(', ')}`;
+    }).join('<br>');
+    return `<tr>
+      <td><strong>${r.applicant}</strong></td>
+      <td>${r.key_name}</td>
+      <td>${typeBadge}</td>
+      <td style="font-size:12px">${scopeText}</td>
+      <td style="font-size:12px;max-width:200px">${r.reason}</td>
+      <td style="font-size:12px;color:var(--gray-400)">${r.created_at}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-success" onclick="approveRequest('${r.id}')">通过</button>
+        <button class="btn btn-sm btn-danger" onclick="openRejectModal('${r.id}')">拒绝</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function approveRequest(reqId) {
+  const req = SCOPE_REQUESTS.find(r => r.id === reqId);
+  if (!req) return;
+  req.approval_status = 'approved';
+  req.approver = '管理员王';
+  req.resolved_at = new Date().toLocaleString('zh-CN').replace(/\//g, '-');
+
+  if (req.request_type === 'new') {
+    // Find the pending key and activate it
+    const pendingKey = KEYS.find(k => k.name === req.key_name && k.status === 'pending_approval');
+    if (pendingKey) {
+      pendingKey.status = 'active';
+      pendingKey.key_value = 'mck_' + Array.from({length:32}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+      req.key_id = pendingKey.id;
+    }
+  } else if (req.request_type === 'append') {
+    // Merge scope
+    const key = KEYS.find(k => k.id === req.key_id);
+    if (key) {
+      req.requested_scope.forEach(s => {
+        const existing = key.scope.find(e => e.mcp_id === s.mcp_id);
+        if (existing) {
+          s.tools.forEach(t => { if (!existing.tools.includes(t)) existing.tools.push(t); });
+        } else {
+          key.scope.push({...s});
+        }
+      });
+    }
+  }
+
+  updatePendingCount();
+  showToast('已通过审批');
+  renderApprovalList();
+}
+
+function openRejectModal(reqId) {
+  rejectingRequestId = reqId;
+  document.getElementById('reject-reason').value = '';
+  document.getElementById('reject-modal').classList.add('show');
+}
+
+function closeRejectModal() {
+  document.getElementById('reject-modal').classList.remove('show');
+  rejectingRequestId = null;
+}
+
+function confirmReject() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) { showToast('请填写拒绝理由'); return; }
+
+  const req = SCOPE_REQUESTS.find(r => r.id === rejectingRequestId);
+  if (req) {
+    req.approval_status = 'rejected';
+    req.reject_reason = reason;
+    req.approver = '管理员王';
+    req.resolved_at = new Date().toLocaleString('zh-CN').replace(/\//g, '-');
+
+    if (req.request_type === 'new') {
+      const pendingKey = KEYS.find(k => k.name === req.key_name && k.status === 'pending_approval');
+      if (pendingKey) {
+        KEYS = KEYS.filter(k => k.id !== pendingKey.id);
+      }
+    }
+  }
+
+  updatePendingCount();
+  closeRejectModal();
+  showToast('已拒绝申请');
+  renderApprovalList();
+}
+
+// ==================== Admin: All Keys ====================
+function renderAdminKeys() {
+  const filter = document.getElementById('admin-filter-status').value;
+  const filtered = filter ? KEYS.filter(k => k.status === filter) : KEYS;
+  const tbody = document.getElementById('admin-keys-body');
+  tbody.innerHTML = filtered.map(k => {
+    const statusBadge = getStatusBadge(k.status);
+    const scopeSummary = getScopeSummary(k.scope);
+    const canRevoke = k.status === 'active';
+    return `<tr>
+      <td><strong>${k.name}</strong></td>
+      <td style="font-family:monospace;font-size:12px;color:var(--gray-400)">${k.id}</td>
+      <td>${k.applicant}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:12px">${scopeSummary}</td>
+      <td style="font-size:12px;color:var(--gray-400)">${k.created_at}</td>
+      <td>${canRevoke ? `<button class="btn btn-sm btn-danger" onclick="adminRevokeKey('${k.id}')">强制撤销</button>` : '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function adminRevokeKey(keyId) {
+  if (!confirm('确定要强制撤销此 KEY 吗？此操作不可恢复。')) return;
+  const key = KEYS.find(k => k.id === keyId);
+  if (key) {
+    key.status = 'revoked';
+    key.revoked_at = new Date().toLocaleString('zh-CN').replace(/\//g, '-');
+    showToast('KEY 已强制撤销');
+    renderAdminKeys();
+  }
+}
+
+// ==================== Admin: Audit ====================
+let globalAuditPage = 1;
+
+function renderGlobalAudit() {
+  const toolFilter = document.getElementById('audit-filter-tool').value;
+  const resultFilter = document.getElementById('audit-filter-result').value;
+  const searchVal = document.getElementById('global-audit-search')?.value?.trim().toLowerCase() || '';
+  let logs = [...AUDIT_LOGS];
+  if (toolFilter) logs = logs.filter(l => l.tool === toolFilter);
+  if (resultFilter) logs = logs.filter(l => l.result === resultFilter);
+  if (searchVal) logs = logs.filter(l => l.user.toLowerCase().includes(searchVal) || l.tool.toLowerCase().includes(searchVal));
+
+  const container = document.getElementById('global-audit-content');
+  if (logs.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📝</div>暂无匹配的日志</div>';
+    document.getElementById('global-audit-pagination').innerHTML = '';
+    return;
+  }
+  const totalPages = Math.ceil(logs.length / AUDIT_PAGE_SIZE);
+  if (globalAuditPage > totalPages) globalAuditPage = totalPages;
+  const start = (globalAuditPage - 1) * AUDIT_PAGE_SIZE;
+  const pageLogs = logs.slice(start, start + AUDIT_PAGE_SIZE);
+  container.innerHTML = pageLogs.map(l => renderLogRow(l, true)).join('');
+  renderPagination('global-audit-pagination', globalAuditPage, totalPages, logs.length, 'paginateGlobalAudit');
+}
+
+// ==================== Helpers ====================
+function getScopeSummary(scope) {
+  const serverCount = scope.length;
+  const toolCount = scope.reduce((sum, s) => sum + s.tools.length, 0);
+  return `${serverCount}个 MCP Server · ${toolCount}个工具`;
+}
+
+function getScopeSummaryFromScope(scope) {
+  return getScopeSummary(scope);
+}
+
+function getStatusBadge(status) {
+  if (status === 'active') return '<span class="badge badge-active">生效中</span>';
+  if (status === 'pending_approval') return '<span class="badge badge-pending">审批中</span>';
+  if (status === 'revoked') return '<span class="badge badge-revoked">已撤销</span>';
+  return status;
+}
+
+function renderLogRow(log, showKey) {
+  const resultClass = log.result === 'success' ? 'badge-active' : log.result === 'blocked' ? 'badge-pending' : 'badge-rejected';
+  const resultText = log.result === 'success' ? '成功' : log.result === 'blocked' ? '前置拦截' : '失败';
+  const keyInfo = showKey ? ` <span style="color:var(--gray-400);font-size:11px">(${KEYS.find(k=>k.id===log.key_id)?.name || log.key_id})</span>` : '';
+  const serverName = log.mcp_server || resolveServerNameForTool(log.tool);
+  return `<div class="log-row">
+    <span class="log-time">${log.time}</span>
+    <span class="log-user">${log.user}</span>
+    <span class="log-server">${serverName}</span>
+    <span class="log-tool">${log.tool}${keyInfo}</span>
+    <span class="log-result"><span class="badge ${resultClass}">${resultText}</span></span>
+  </div>`;
+}
+
+function paginateDetailAudit(page) {
+  detailAuditPage = page;
+  renderDetailAudit(currentKeyId);
+}
+
+function paginateGlobalAudit(page) {
+  globalAuditPage = page;
+  renderGlobalAudit();
+}
+
+function renderPagination(containerId, currentPage, totalPages, totalItems, paginateFn) {
+  const container = document.getElementById(containerId);
+  if (totalPages <= 1) { container.innerHTML = `<span class="page-info">共 ${totalItems} 条</span>`; return; }
+  container.innerHTML = `
+    <button ${currentPage <= 1 ? 'disabled' : ''} onclick="${paginateFn}(${currentPage - 1})">上一页</button>
+    <span class="page-info">${currentPage} / ${totalPages}（共 ${totalItems} 条）</span>
+    <button ${currentPage >= totalPages ? 'disabled' : ''} onclick="${paginateFn}(${currentPage + 1})">下一页</button>
+  `;
+}
+
+function toggleManualConfig() {
+  const el = document.getElementById('manual-config-detail');
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) {
+    const key = KEYS.find(k => k.id === currentKeyId);
+    if (key) renderDifyConfig(key);
+  }
+}
+
+function updatePendingCount() {
+  const count = SCOPE_REQUESTS.filter(r => r.approval_status === 'pending').length;
+  document.getElementById('pending-count').textContent = count;
+  document.getElementById('pending-count').style.display = count > 0 ? '' : 'none';
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ==================== Init ====================
+renderMyKeys();
+updatePendingCount();
+</script>
+</body>
+</html>
